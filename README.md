@@ -38,7 +38,8 @@ I am very thankful to asyncmongo, i worked with he in some projects and he's bee
     import tornado.web
     from tornado import gen
 
-    # A connection to the MongoDB database needs to be established before mongotor can manage collections or do any other operations
+    # A connection to the MongoDB database needs to be established before perform operations
+    # A connection is stabilished using a Session object
     Session.create(['localhost:27017','localhost:27018'], 'asyncmongo_test')
     
     class User(Collection):
