@@ -14,7 +14,7 @@
 
 ## Why not pymongo ?
 
-[PyMongo](http://api.mongodb.org/python/current/) is a recommended way to work with MongoDB in python, but isn't asynchronous and not running inside de tornado's ioloop. If you use pymongo you won't take the advantages of tornado.
+[PyMongo](http://api.mongodb.org/python/current/) is a recommended way to work with MongoDB in python, but isn't asynchronous and not run inside de tornado's ioloop. If you use pymongo you won't take the advantages of tornado.
 
 ## Why not asyncmongo ?
 
