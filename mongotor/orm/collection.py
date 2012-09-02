@@ -59,7 +59,8 @@ class CollectionMetaClass(type):
 
 
 class Collection(object):
-
+    """Collection class
+    """
     __metaclass__ = CollectionMetaClass
 
     def __new__(cls, class_name=None, *args, **kwargs):
@@ -94,6 +95,12 @@ class Collection(object):
 
     @gen.engine
     def save(self, safe=True, callback=None):
+        """Save a document
+
+        :Parameters:
+        - `safe` (optional): safe insert operation 
+        - `callback` : method which will be called when save is finished
+        """
         pre_save.send(instance=self)
 
         database = Database()
@@ -111,6 +118,13 @@ class Collection(object):
 
     @gen.engine
     def remove(self, safe=True, callback=None):
+        """Remove a document
+
+        :Parameters:
+        - `safe` (optional): safe remove operation
+        - `callback` : method which will be called when remove is finished
+        """
+        pre
         pre_remove.send(instance=self)
 
         database = Database()
@@ -128,6 +142,12 @@ class Collection(object):
 
     @gen.engine
     def update(self, document=None, safe=True, callback=None):
+        """Update a document
+
+        :Parameters:
+        - `safe` (optional): safe update operation
+        - `callback` : method which will be called when update is finished
+        """
         pre_update.send(instance=self)
 
         if not document:
