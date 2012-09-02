@@ -24,7 +24,9 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 from bson.son import SON
 from tornado import gen
+from mongotor import message
 from mongotor.database import Database
+from mongotor.cursor import Cursor
 
 
 class Manager(object):
@@ -34,23 +36,25 @@ class Manager(object):
 
     @gen.engine
     def find_one(self, query, callback):
-        result, error = yield gen.Task(
-            Database(self.collection.__collection__).find_one, query)
+
+        cursor = Cursor(self.collection.__collection__, query)
+        result, error = yield gen.Task(cursor.find, limit=-1)
 
         instance = None
-        if result and result[0]:
-            instance = self.collection.create(result[0])
+        if result:
+            instance = self.collection.create(result)
 
         callback(instance)
 
     @gen.engine
     def find(self, query, callback, **kw):
-        result, error = yield gen.Task(
-            Database(self.collection.__collection__).find, query, **kw)
+        cursor = Cursor(self.collection.__collection__, query)
+        result, error = yield gen.Task(cursor.find, **kw)
+
         items = []
 
-        if result and result[0]:
-            for item in result[0]:
+        if result:
+            for item in result:
                 items.append(self.collection.create(item))
 
         callback(items)
@@ -67,8 +71,8 @@ class Manager(object):
         result, error = yield gen.Task(Database().command, command)
 
         total = 0
-        if result and len(result) > 0 and 'n' in result[0]:
-            total = int(result[0]['n'])
+        if result and len(result) > 0 and 'n' in result:
+            total = int(result['n'])
 
         callback(total)
 
@@ -84,11 +88,11 @@ class Manager(object):
             command['query'] = query
 
         result, error = yield gen.Task(Database().command, command)
-        if error['error'] or not result or not result[0]['ok']:
-            callback(None)
-            return
 
-        callback(result[0]['values'])
+        if result and result['ok']:
+            callback(result['values'])
+        else:
+            callback(None)
 
     @gen.engine
     def sum(self, query, field, callback):
@@ -104,9 +108,8 @@ class Manager(object):
         result, error = yield gen.Task(Database().command, command)
         total = 0
 
-        if result:
-            if result[0]['retval']:
-                total = result[0]['retval'][0]['csum']
+        if result and result['retval']:
+            total = result['retval'][0]['csum']
 
         callback(total)
 
@@ -137,10 +140,9 @@ class Manager(object):
         result, error = yield gen.Task(Database().command, command)
         items = []
 
-        if result:
-            if result[0]['ok']:
-                for item in result[0]['results']:
-                    items.append(self.collection.create(item['obj']))
+        if result and result['ok']:
+            for item in result['results']:
+                items.append(self.collection.create(item['obj']))
 
         callback(items)
 
@@ -159,14 +161,18 @@ class Manager(object):
             command.update({'out': {'inline': 1}})
 
         result, error = yield gen.Task(Database().command, command)
-        if not result or int(result[0]['ok']) != 1:
+        if not result or int(result['ok']) != 1:
             callback(None)
             return
 
-        callback(result[0]['results'])
+        callback(result['results'])
 
     @gen.engine
-    def drop(self, callback):
-        yield gen.Task(Database(self.collection.__collection__).remove)
+    def truncate(self, callback=None):
+        collection_name = Database().get_collection_name(self.collection.__collection__)
+        message_delete = message.delete(collection_name, {}, True, {})
 
-        callback()
+        yield gen.Task(Database().send_message, message_delete)
+
+        if callback:
+            callback()
