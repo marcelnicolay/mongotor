@@ -32,15 +32,15 @@ I am very thankful to asyncmongo, i worked with he in some projects and he's bee
 
     from mongotor.orm import Collection
     from mongotor.orm.field import StringField, ObjectIdField, BooleanField, DateTimeField
-    from mongotor import Session
+    from mongotor.database import Database
 
     from datetime import datetime
     import tornado.web
     from tornado import gen
 
     # A connection to the MongoDB database needs to be established before perform operations
-    # A connection is stabilished using a Session object
-    Session.create(['localhost:27017','localhost:27018'], 'asyncmongo_test')
+    # A connection is stabilished using a Databse object
+    Database.connect(['localhost:27017','localhost:27018'], 'asyncmongo_test')
     
     class User(Collection):
 

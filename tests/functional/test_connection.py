@@ -115,14 +115,12 @@ class ConnectionTestCase(testing.AsyncTestCase):
         self.conn.send_message.when.called_with('shouldBeMessage',
             callback=None).should.throw(InterfaceError, "connection is closed")
 
-    def test_returns_error_when_stream_reaise_ioerror(self):
-        """[ConnectionTestCase] - Returns IOError when stream throw error"""
+    def test_raises_error_when_stream_reaise_ioerror(self):
+        """[ConnectionTestCase] - Raises IOError when stream throw error"""
         fake_stream = fudge.Fake()
         fake_stream.expects('write').raises(IOError())
 
         with fudge.patched_context(self.conn, '_stream', fake_stream):
-            self.conn.send_message((0, ''), callback=self.stop)
-            response, error = self.wait()
 
-        response.should.be.none
-        error.should.be.a('IOError')
+            self.conn.send_message.when.called_with((0, ''), callback=None) \
+                .throw(IOError)

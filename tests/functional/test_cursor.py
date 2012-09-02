@@ -21,8 +21,8 @@ class CursorTestCase(testing.AsyncTestCase):
         super(CursorTestCase, self).tearDown()
         self.pool.close()
 
-    def test_can_be_insert_a_document(self):
-        """[CursorTestCase] - Can be insert a document"""
+    def test_insert_a_document(self):
+        """[CursorTestCase] - insert a document"""
 
         cursor = Cursor(pool=self.pool, collection='test', dbname='test')
 
@@ -34,8 +34,8 @@ class CursorTestCase(testing.AsyncTestCase):
         response['data'][0]['ok'].should.be.equal(1.0)
         error.should.be.none
 
-    def test_can_be_insert_a_list_of_documents(self):
-        """[CursorTestCase] - Can be insert a list of documents"""
+    def test_insert_a_list_of_documents(self):
+        """[CursorTestCase] - insert a list of documents"""
 
         cursor = Cursor(pool=self.pool, collection='test', dbname='test')
 
@@ -46,4 +46,47 @@ class CursorTestCase(testing.AsyncTestCase):
         response, error = self.wait()
 
         response['data'][0]['ok'].should.be.equal(1.0)
+        error.should.be.none
+
+    def test_remove_a_document_by_id(self):
+        """[CursorTestCase] - remove a document by id"""
+
+        cursor = Cursor(pool=self.pool, collection='test', dbname='test')
+
+        document = {'_id': ObjectId(), 'name': 'shouldBeName'}
+        cursor.insert(document, callback=self.stop)
+        response, error = self.wait()
+
+        cursor.remove(document['_id'], callback=self.stop)
+        response, error = self.wait()
+
+        response['data'][0]['ok'].should.be.equal(1.0)
+        error.should.be.none
+
+    def test_remove_all_documents(self):
+        """[CursorTestCase] - remove all documents"""
+
+        cursor = Cursor(pool=self.pool, collection='test', dbname='test')
+
+        cursor.remove(None, callback=self.stop)
+        response, error = self.wait()
+
+        response['data'][0]['ok'].should.be.equal(1.0)
+        error.should.be.none
+
+    def test_update_a_document(self):
+        """[CursorTestCase] - update a document"""
+
+        cursor = Cursor(pool=self.pool, collection='test', dbname='test')
+
+        document = {'_id': ObjectId(), 'name': 'shouldBeName'}
+        cursor.insert(document, callback=self.stop)
+        response, error = self.wait()
+
+        cursor.update({'_id': document['_id']}, {'$set': \
+            {'name': 'shouldBeUpdateName'}}, callback=self.stop)
+        response, error = self.wait()
+
+        response['data'][0]['ok'].should.be.equal(1.0)
+        response['data'][0]['updatedExisting'].should.be.ok
         error.should.be.none

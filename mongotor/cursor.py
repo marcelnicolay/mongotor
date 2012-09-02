@@ -47,7 +47,42 @@ class Cursor(object):
         assert isinstance(docs, list)
 
         connection = yield gen.Task(self._pool.connection)
-        message_insert = message.insert(self.collection_name, docs,
+        try:
+            message_insert = message.insert(self.collection_name, docs,
                 check_keys, safe, kwargs)
 
-        connection.send_message(message_insert, callback=callback)
+            connection.send_message(message_insert, callback=callback)
+        except:
+            connection.close()
+            raise
+
+    @gen.engine
+    def remove(self, spec_or_id=None, safe=True, callback=None, **kwargs):
+        if spec_or_id is None:
+            spec_or_id = {}
+        if not isinstance(spec_or_id, dict):
+            spec_or_id = {"_id": spec_or_id}
+
+        connection = yield gen.Task(self._pool.connection)
+        try:
+            message_delete = message.delete(self.collection_name, spec_or_id,
+                safe, kwargs)
+            connection.send_message(message_delete, callback=callback)
+        except:
+            connection.close()
+            raise
+
+    @gen.engine
+    def update(self, spec, document, upsert=False, safe=True,
+        multi=False, callback=None, **kwargs):
+        """Update a document(s) in this collection.
+        """
+
+        connection = yield gen.Task(self._pool.connection)
+        try:
+            message_update = message.update(self.collection_name, upsert,
+                multi, spec, document, safe, kwargs)
+            connection.send_message(message_update, callback=callback)
+        except:
+            connection.close()
+            raise

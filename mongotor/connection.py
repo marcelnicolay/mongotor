@@ -124,4 +124,5 @@ class Connection(object):
             callback((response, error))
 
         except IOError, e:
-            callback((None, e))
+            raise e
+
