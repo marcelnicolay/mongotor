@@ -27,7 +27,8 @@ from mongotor.pool import ConnectionPool
 
 
 class Database(object):
-
+    """Database object
+    """
     _instance = None
 
     def __new__(cls):
@@ -37,7 +38,13 @@ class Database(object):
         return cls._instance
 
     def init(self, addresses, dbname, **kwargs):
+        self._addresses = addresses
+        self._dbname = dbname
+
         self._pool = ConnectionPool(addresses, dbname, **kwargs)
+
+    def get_collection_name(self, collection):
+        return u'%s.%s' % (self._dbname, collection)
 
     @classmethod
     def connect(cls, addresses, dbname, **kwargs):
@@ -55,6 +62,14 @@ class Database(object):
         database.init(addresses, dbname, **kwargs)
 
         return database
+
+    @classmethod
+    def disconnect(cls):
+        if not cls._instance:
+            raise ValueError("Database isn't connected")
+
+        cls._instance._pool.close()
+        cls._instance = None
 
     @gen.engine
     def send_message(self, message, callback):

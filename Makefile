@@ -9,13 +9,8 @@ export PYTHONPATH:=  ${PWD}
 install_deps:
 	pip install -r requirements-dev.txt
 
-test: functional unit
-
-unit: clean
-	nosetests -s --verbose --with-coverage --cover-package=mongotor tests/unit/*
-
-functional: clean
-	nosetests -s --verbose --with-coverage --cover-package=mongotor tests/functional/*
+test: clean
+	nosetests -s --verbose --with-coverage --cover-package=mongotor tests/*
 
 clean:
 	echo "Cleaning up build and *.pyc files..."

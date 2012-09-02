@@ -68,3 +68,14 @@ class DatabaseTestCase(testing.AsyncTestCase):
 
         database.send_message.when.called_with("", callback=None) \
             .throw(ValueError, 'shoud not be send message')
+
+    def test_disconnect_database(self):
+        """[DatabaseTestCase] - Disconnect the database"""
+        Database.connect(["localhost:27017"], dbname='test')
+        Database.disconnect()
+
+        Database._instance.should.be.none
+
+    def test_raises_error_when_disconnect_a_not_connected_database(self):
+        """[DatabaseTestCase] - Raises ValueError when disconnect from a not connected database"""
+        Database.disconnect.when.called_with().throw(ValueError, "Database isn't connected")

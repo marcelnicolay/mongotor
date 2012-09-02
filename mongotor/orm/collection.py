@@ -24,10 +24,12 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 import logging
 from tornado import gen
+from mongotor import message
 from mongotor.orm.field import Field
 from mongotor.orm.signal import (pre_save, post_save,
     pre_remove, post_remove, pre_update, post_update)
 from mongotor.orm.manager import Manager
+from mongotor.database import Database
 
 
 logger = logging.getLogger(__name__)
@@ -91,37 +93,56 @@ class Collection(object):
         return instance
 
     @gen.engine
-    def save(self, callback=None):
+    def save(self, safe=True, callback=None):
         pre_save.send(instance=self)
 
-        response, error = yield gen.Task(Session(self.__collection__).insert, self.as_dict(), safe=True)
+        database = Database()
+        collection_name = database.get_collection_name(self.__collection__)
+
+        message_insert = message.insert(collection_name, [self.as_dict()],
+            True, safe, {})
+
+        response, error = yield gen.Task(database.send_message, message_insert)
 
         post_save.send(instance=self)
 
         if callback:
-            callback(error)
+            callback((response, error))
 
     @gen.engine
-    def remove(self, callback=None):
+    def remove(self, safe=True, callback=None):
         pre_remove.send(instance=self)
 
-        response, error = yield gen.Task(Session(self.__collection__).remove, {'_id': self._id})
+        database = Database()
+        collection_name = database.get_collection_name(self.__collection__)
+
+        message_delete = message.delete(collection_name, {'_id': self._id},
+            safe, {})
+
+        response, error = yield gen.Task(database.send_message, message_delete)
 
         post_remove.send(instance=self)
 
         if callback:
-            callback(error)
+            callback((response, error))
 
     @gen.engine
-    def update(self, obj_data=None, callback=None):
+    def update(self, document=None, safe=True, callback=None):
         pre_update.send(instance=self)
 
-        if not obj_data:
-            obj_data = self.as_dict()
+        if not document:
+            document = self.as_dict()
 
-        response, error = yield gen.Task(Session(self.__collection__).update, {'_id': self._id}, obj_data, safe=True)
+        database = Database()
+        collection_name = database.get_collection_name(self.__collection__)
+        spec = {'_id': self._id}
+
+        message_update = message.update(collection_name, False,
+                False, spec, document, safe, {})
+
+        response, error = yield gen.Task(database.send_message, message_update)
 
         post_update.send(instance=self)
 
         if callback:
-            callback(error)
+            callback((response, error))
