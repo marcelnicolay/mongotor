@@ -107,7 +107,7 @@ class Connection(object):
         self._send_message(message, callback)
 
     @gen.engine
-    def _send_message(self, message, callback):
+    def _send_message(self, message, callback=None):
         (request_id, message) = message
         try:
             self._stream.write(message)
@@ -121,7 +121,8 @@ class Connection(object):
 
             response, error = self._parse_response(data, request_id)
 
-            callback((response, error))
+            if callback:
+                callback((response, error))
 
         except IOError, e:
             raise e

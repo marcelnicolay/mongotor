@@ -72,7 +72,7 @@ class Database(object):
         cls._instance = None
 
     @gen.engine
-    def send_message(self, message, callback):
+    def send_message(self, message, callback=None):
 
         connection = yield gen.Task(self._pool.connection)
         try:
