@@ -2,10 +2,8 @@
 from tornado.ioloop import IOLoop
 from tornado import testing
 from mongotor.pool import ConnectionPool
-from mongotor.errors import InterfaceError, DatabaseError, IntegrityError
 
 import sure
-import fudge
 
 
 class ConnectionPoolTestCase(testing.AsyncTestCase):

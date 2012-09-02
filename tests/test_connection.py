@@ -2,7 +2,7 @@
 from tornado.ioloop import IOLoop
 from tornado import testing
 from mongotor.connection import Connection
-from mongotor.errors import InterfaceError, DatabaseError, IntegrityError
+from mongotor.errors import InterfaceError, DatabaseError
 from bson import ObjectId
 from mongotor import message
 
