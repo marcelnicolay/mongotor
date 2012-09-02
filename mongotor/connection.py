@@ -34,10 +34,11 @@ logger = logging.getLogger(__name__)
 
 class Connection(object):
 
-    def __init__(self, host, port, autoreconnect=True):
+    def __init__(self, pool, host, port, auto_reconnect=True):
+        self._pool = pool
         self._host = host
         self._port = port
-        self._autoreconnect = autoreconnect
+        self._auto_reconnect = auto_reconnect
         self._connected = False
 
         self._connect()
@@ -49,14 +50,14 @@ class Connection(object):
             s.connect((self._host, self._port))
 
             self._stream = iostream.IOStream(s)
-            self._stream.set_close_callback(self._on_close)
+            self._stream.set_close_callback(self._on_socket_close)
 
             self._connected = True
 
         except socket.error, error:
             raise InterfaceError(error)
 
-    def _on_close(self):
+    def _on_socket_close(self):
         self._connected = False
 
     def _parse_header(self, header, request_id):
@@ -94,10 +95,11 @@ class Connection(object):
     def close(self):
         self._connected = False
         self._stream.close()
+        self._pool.release(self)
 
     def send_message(self, message, callback):
         if not self._connected:
-            if self._autoreconnect:
+            if self._auto_reconnect:
                 self._connect()
             else:
                 raise InterfaceError('connection is closed and autoreconnect is false')
@@ -114,6 +116,9 @@ class Connection(object):
             length = self._parse_header(header_data, request_id)
 
             data = yield gen.Task(self._stream.read_bytes, length - 16)
+
+            self._pool.release(self)
+
             response, error = self._parse_response(data, request_id)
 
             callback((response, error))

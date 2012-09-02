@@ -10,6 +10,11 @@ import sure
 import fudge
 
 
+class FakeConnectionPool(object):
+
+    def release(self, conn):
+        pass
+
 class ConnectionTestCase(testing.AsyncTestCase):
 
     def get_new_ioloop(self):
@@ -17,7 +22,7 @@ class ConnectionTestCase(testing.AsyncTestCase):
 
     def setUp(self):
         super(ConnectionTestCase, self).setUp()
-        self.conn = Connection(host="localhost", port=27017)
+        self.conn = Connection(pool=FakeConnectionPool(), host="localhost", port=27017)
 
     def tearDown(self):
         super(ConnectionTestCase, self).tearDown()
@@ -26,7 +31,7 @@ class ConnectionTestCase(testing.AsyncTestCase):
     def test_not_connect_to_mongo_raises_error(self):
         """[ConnectionTestCase] - Raises error when can't connect to mongo"""
 
-        Connection.when.called_with(host="localhost", port=27000) \
+        Connection.when.called_with(pool=FakeConnectionPool(), host="localhost", port=27000) \
             .should.throw(InterfaceError, "[Errno 61] Connection refused")
 
     def test_connect_to_mongo(self):
@@ -102,8 +107,8 @@ class ConnectionTestCase(testing.AsyncTestCase):
     def test_raises_interface_error_when_cant_reconnect(self):
         """[ConnectionTestCase] - Raises InterfaceError when connection was lost and autoreconnect is False"""
 
-        self.conn = Connection(host="localhost", port=27017,
-            autoreconnect=False)
+        self.conn = Connection(pool=FakeConnectionPool(), host="localhost", port=27017,
+            auto_reconnect=False)
 
         self.conn.close()
 

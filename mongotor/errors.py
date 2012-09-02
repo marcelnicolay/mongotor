@@ -44,9 +44,3 @@ class IntegrityError(DatabaseError):
     def __init__(self, msg, code=None):
         self.code = code
         self.msg = msg
-
-    def __unicode__(self):
-        return u'IntegrityError: %s code:%s' % (self.msg, self.code or '')
-
-    def __str__(self):
-        return str(self.__unicode__())
