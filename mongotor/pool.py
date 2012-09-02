@@ -107,4 +107,17 @@ class ConnectionPool(object):
         finally:
             self._condition.release()
 
-
+    def close(self):
+        """Close all connections in the pool."""
+        self._condition.acquire()
+        try:
+            while self._idle_connections:  # close all idle connections
+                con = self._idle_connections.pop(0)
+                try:
+                    con._close()
+                except Exception:
+                    pass
+                self._connections -= 1
+            self._condition.notifyAll()
+        finally:
+            self._condition.release()
