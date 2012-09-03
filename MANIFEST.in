@@ -1,0 +1,2 @@
+recursive-include mongotor *.py
+include README.md
