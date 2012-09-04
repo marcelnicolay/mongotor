@@ -19,7 +19,7 @@ class DatabaseTestCase(testing.AsyncTestCase):
 
     def test_create_singleton_database_connection(self):
         """[DatabaseTestCase] - Create a singleton database connection"""
-        database = Database.connect(["localhost:27017"], dbname='test')
+        database = Database.connect(["localhost:27027"], dbname='test')
 
         database._pool.should.be.a('mongotor.pool.ConnectionPool')
         database.should.be.equal(Database())
@@ -27,14 +27,14 @@ class DatabaseTestCase(testing.AsyncTestCase):
     def test_raises_error_when_database_was_initiated(self):
         """[DatabaseTestCase] - Raises ValueError when connect to inititated database"""
 
-        Database.connect(["localhost:27017"], dbname='test')
-        Database.connect.when.called_with(["localhost:27017"],
+        Database.connect(["localhost:27027"], dbname='test')
+        Database.connect.when.called_with(["localhost:27027"],
             dbname='test').throw(ValueError, 'Database already intiated')
 
     def test_send_test_message(self):
         """[DatabaseTestCase] - Send a test message to database"""
 
-        Database.connect(["localhost:27017"], dbname='test')
+        Database.connect(["localhost:27027"], dbname='test')
 
         object_id = ObjectId()
         message_test = message.query(0, 'mongotor_test.$cmd', 0, 1,
@@ -52,7 +52,7 @@ class DatabaseTestCase(testing.AsyncTestCase):
     @fudge.test
     def test_raises_error_when_cant_send_message(self):
         """[DatabaseTestCase] - Raises error when cant send message"""
-        database = Database.connect(["localhost:27017"], dbname='test')
+        database = Database.connect(["localhost:27027"], dbname='test')
         database._pool = fudge.Fake()
 
         fake_connection = fudge.Fake('connection')
@@ -71,7 +71,7 @@ class DatabaseTestCase(testing.AsyncTestCase):
 
     def test_disconnect_database(self):
         """[DatabaseTestCase] - Disconnect the database"""
-        Database.connect(["localhost:27017"], dbname='test')
+        Database.connect(["localhost:27027"], dbname='test')
         Database.disconnect()
 
         Database._instance.should.be.none

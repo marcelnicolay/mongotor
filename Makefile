@@ -6,6 +6,21 @@ filename=mongotor-`python -c 'import mongotor;print mongotor.version'`.tar.gz
 
 export PYTHONPATH:=  ${PWD}
 
+MONGOD=/usr/local/Cellar/mongodb/2.2.0-x86_64/bin/mongod
+MONGO_DATA=`pwd`/data
+
+start_mongo: kill_mongo
+	mkdir -p ${MONGO_DATA}/db/node1 ${MONGO_DATA}/db/node2 ${MONGO_DATA}/db/arbiter ${MONGO_DATA}/log
+	
+	echo "startin mongo instance"
+	${MONGOD} --port=27027 --dbpath=${MONGO_DATA}/db/node1 --replSet=mongotor --logpath=${MONGO_DATA}/log/node1.log --fork > /dev/null 2>&1
+	${MONGOD} --port=27028 --dbpath=${MONGO_DATA}/db/node2 --replSet=mongotor --logpath=${MONGO_DATA}/log/node2.log --fork > /dev/null 2>&1
+	${MONGOD} --port=27029 --dbpath=${MONGO_DATA}/db/arbiter --replSet=mongotor --logpath=${MONGO_DATA}/log/arbiter.log --fork > /dev/null 2>&1
+
+kill_mongo:
+	echo "killing mongo instance"
+	ps -ef | grep mongo | grep -v grep | grep ${MONGO_DATA} | tr -s ' ' | cut -d ' ' -f 3 | xargs kill -9
+
 install_deps:
 	pip install -r requirements-dev.txt
 

@@ -13,7 +13,7 @@ class ConnectionPoolTestCase(testing.AsyncTestCase):
 
     def test_get_connection(self):
         """[ConnectionPoolTestCase] - Can get a connection"""
-        pool = ConnectionPool(["localhost:27017"], dbname='test')
+        pool = ConnectionPool(["localhost:27027"], dbname='test')
         pool.connection(self.stop)
         conn = self.wait()
 
@@ -22,7 +22,7 @@ class ConnectionPoolTestCase(testing.AsyncTestCase):
     def test_wait_for_connection_when_maxconnection_is_reached(self):
         """[ConnectionPoolTestCase] - Wait for a connection when maxconnections is reached"""
 
-        pool = ConnectionPool(["localhost:27017"], dbname='test', maxconnections=1)
+        pool = ConnectionPool(["localhost:27027"], dbname='test', maxconnections=1)
 
         pool.connection(self.stop)
         conn1 = self.wait()

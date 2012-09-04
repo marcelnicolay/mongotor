@@ -18,7 +18,7 @@ class ManagerTestCase(testing.AsyncTestCase):
 
     def setUp(self):
         super(ManagerTestCase, self).setUp()
-        Database.connect(["localhost:27017"], dbname='mongotor_test')
+        Database.connect(["localhost:27027"], dbname='mongotor_test')
 
     def tearDown(self):
         super(ManagerTestCase, self).tearDown()
