@@ -9,7 +9,7 @@ export PYTHONPATH:=  ${PWD}
 MONGOD=/usr/local/Cellar/mongodb/2.2.0-x86_64/bin/mongod
 MONGO_DATA=`pwd`/data
 
-start_mongo: kill_mongo
+mongo-start: mongo-kill
 	mkdir -p ${MONGO_DATA}/db/node1 ${MONGO_DATA}/db/node2 ${MONGO_DATA}/db/arbiter ${MONGO_DATA}/log
 	
 	echo "startin mongo instance"
@@ -17,9 +17,12 @@ start_mongo: kill_mongo
 	${MONGOD} --port=27028 --dbpath=${MONGO_DATA}/db/node2 --replSet=mongotor --logpath=${MONGO_DATA}/log/node2.log --fork > /dev/null 2>&1
 	${MONGOD} --port=27029 --dbpath=${MONGO_DATA}/db/arbiter --replSet=mongotor --logpath=${MONGO_DATA}/log/arbiter.log --fork > /dev/null 2>&1
 
-kill_mongo:
+mongo-kill:
 	echo "killing mongo instance"
 	ps -ef | grep mongo | grep -v grep | grep ${MONGO_DATA} | tr -s ' ' | cut -d ' ' -f 3 | xargs kill -9
+
+mongo-config:
+	mongo localhost:270127 < config-replicaset.js
 
 install_deps:
 	pip install -r requirements-dev.txt
