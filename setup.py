@@ -16,7 +16,7 @@ def get_packages():
 setup(
     name = 'mongotor',
     version = version,
-    description = "(MONGO + TORnado) is an asynchronous toolkit for accessing mongo with tornado",
+    description = "(MONGO + TORnado) is an asynchronous driver and toolkit for accessing MongoDB with Tornado",
     long_description = open("README.md").read(),
     keywords = ['mongo','tornado'],
     author = 'Marcel Nicolay',
