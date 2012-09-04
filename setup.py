@@ -1,6 +1,17 @@
 # coding: utf-8 -*-
-from setuptools import setup, find_packages
+from setuptools import setup
 from mongotor import version
+import os
+
+
+def get_packages():
+    # setuptools can't do the job :(
+    packages = []
+    for root, dirnames, filenames in os.walk('mongotor'):
+        if '__init__.py' in filenames:
+            packages.append(".".join(os.path.split(root)).strip("."))
+
+    return packages
 
 setup(
     name = 'mongotor',
@@ -22,6 +33,6 @@ setup(
                    'Topic :: Software Development :: Libraries :: Application Frameworks',
                    ],
     install_requires = open("requirements.txt").read().split("\n"),
-    packages = ['mongotor'],
+    packages = get_packages(),
     test_suite="nose.collector"
 )
