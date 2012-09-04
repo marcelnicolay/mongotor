@@ -22,7 +22,7 @@ mongo-kill:
 	ps -ef | grep mongo | grep -v grep | grep ${MONGO_DATA} | tr -s ' ' | cut -d ' ' -f 3 | xargs kill -9
 
 mongo-config:
-	mongo localhost:270127 < config-replicaset.js
+	mongo localhost:27027 < config-replicaset.js
 
 install_deps:
 	pip install -r requirements-dev.txt
