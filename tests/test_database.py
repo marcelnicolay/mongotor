@@ -21,7 +21,6 @@ class DatabaseTestCase(testing.AsyncTestCase):
         """[DatabaseTestCase] - Create a singleton database connection"""
         database = Database.connect(["localhost:27027"], dbname='test')
 
-        database._pool.should.be.a('mongotor.pool.ConnectionPool')
         database.should.be.equal(Database())
 
     def test_raises_error_when_database_was_initiated(self):
@@ -40,7 +39,7 @@ class DatabaseTestCase(testing.AsyncTestCase):
         message_test = message.query(0, 'mongotor_test.$cmd', 0, 1,
             {'driverOIDTest': object_id})
 
-        Database().send_message(message_test, self.stop)
+        Database().send_message(message_test, is_master=True, callback=self.stop)
         response, error = self.wait()
 
         result = response['data'][0]
@@ -53,17 +52,16 @@ class DatabaseTestCase(testing.AsyncTestCase):
     def test_raises_error_when_cant_send_message(self):
         """[DatabaseTestCase] - Raises error when cant send message"""
         database = Database.connect(["localhost:27027"], dbname='test')
-        database._pool = fudge.Fake()
 
         fake_connection = fudge.Fake('connection')
         fake_connection.expects('send_message').raises(
             ValueError('shoud not be send message'))
         fake_connection.expects('close')
 
-        def fake_connection_method(callback):
+        def fake_connection_method(is_master, callback):
             callback(fake_connection)
 
-        database._pool.connection = fudge.Fake(callable=True) \
+        database.get_connection = fudge.Fake(callable=True) \
             .calls(fake_connection_method)
 
         database.send_message.when.called_with("", callback=None) \

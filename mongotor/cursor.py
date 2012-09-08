@@ -37,7 +37,7 @@ class Cursor(object):
 
     def __init__(self, collection, spec=None, fields=None, snapshot=False,
         tailable=False, max_scan=None, is_command=False, explain=False,
-        hint=None, timeout=True):
+        hint=None, timeout=True, slave_okay=True, is_master=False, connection=None):
 
         if spec is not None and not isinstance(spec, dict):
             spec = {"_id": spec}
@@ -53,6 +53,9 @@ class Cursor(object):
         self._timeout = timeout
         self._is_command = is_command
         self._explain = explain
+        self._slave_okay = slave_okay
+        self._is_master = is_master
+        self._connection = connection
 
     @gen.engine
     def find(self, skip=0, limit=0, sort=None, callback=None):
@@ -61,12 +64,21 @@ class Cursor(object):
         message_query = message.query(self._query_options(), self._collection_name,
             skip, limit, self._query_spec(), self._fields)
 
-        response, error = yield gen.Task(Database().send_message, message_query)
+        if self._connection:
+            response, error = yield gen.Task(self._connection.send_message, message_query)
+        else:
+            response, error = yield gen.Task(Database().send_message, message_query,
+                is_master=self._is_master)
 
         # close cursor
         if response and response.get('cursor_id'):
             cursor_id = response['cursor_id']
-            Database().send_message(message.kill_cursors([cursor_id]), callback=None)
+
+            if self._connection:
+                self._connection.send_message(message.kill_cursors([cursor_id]), callback=None)
+            else:
+                Database().send_message(message.kill_cursors([cursor_id]),
+                    is_master=self._is_master, callback=None)
 
         if error:
             callback((None, error))
@@ -81,6 +93,8 @@ class Cursor(object):
         options = 0
         if self._tailable:
             options |= _QUERY_OPTIONS["tailable_cursor"]
+        if self._slave_okay:
+            options |= _QUERY_OPTIONS["slave_okay"]
         if not self._timeout:
             options |= _QUERY_OPTIONS["no_timeout"]
         return options

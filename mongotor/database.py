@@ -15,9 +15,62 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import logging
+from functools import partial
 from tornado import gen
+from tornado.ioloop import IOLoop
 from bson import SON
 from mongotor.pool import ConnectionPool
+from mongotor.connection import Connection
+from mongotor.errors import InterfaceError
+
+logger = logging.getLogger(__name__)
+
+
+class Seed(object):
+    """Seed is a node of database cluster
+    """
+
+    def __init__(self, host, port, dbname, pool_kargs=None):
+        if not pool_kargs:
+            pool_kargs = {}
+
+        assert isinstance(host, (str, unicode))
+        assert isinstance(dbname, (str, unicode))
+        assert isinstance(port, int)
+
+        self.host = host
+        self.port = port
+        self.dbname = dbname
+        self.pool_kargs = pool_kargs
+
+        self.is_master = False
+        self.available = False
+
+        self.pool = ConnectionPool(self.host, self.port, self.dbname, **self.pool_kargs)
+
+    @gen.engine
+    def config(self, callback):
+        conn = Connection(self.host, self.port)
+        ismaster = SON([('ismaster', 1)])
+
+        response = None
+        try:
+            response, error = yield gen.Task(Database()._command, ismaster,
+                connection=conn)
+        except InterfaceError, ie:
+            logger.error('oops, database seed {host}:{port} is unavailable: {error}' \
+                .format(host=self.host, port=self.port, error=ie))
+        finally:
+            conn.close()
+
+        if response:
+            self.is_master = response['ismaster']
+            self.available = True
+            callback()
+        else:
+            self.available = False
+            callback()
 
 
 class Database(object):
@@ -34,8 +87,11 @@ class Database(object):
     def init(self, addresses, dbname, **kwargs):
         self._addresses = self._parse_addresses(addresses)
         self._dbname = dbname
+        self._connected = False
+        self._seeds = []
+        self._pool_kwargs = kwargs
 
-        self._pool = ConnectionPool(self._addresses[0], dbname, **kwargs)
+        self._config_seeds()
 
     def get_collection_name(self, collection):
         return u'%s.%s' % (self._dbname, collection)
@@ -52,6 +108,46 @@ class Database(object):
             parsed_addresses.append((host, int(port)))
 
         return parsed_addresses
+
+    @gen.engine
+    def _config_seeds(self):
+
+        if not self._seeds:
+            for host, port in self._addresses:
+                seed = Seed(host, port, self._dbname, self._pool_kwargs)
+                self._seeds.append(seed)
+
+        for seed in self._seeds:
+            yield gen.Task(seed.config)
+
+    def _get_master_seed(self, callback):
+        for seed in self._seeds:
+            if seed.available and seed.is_master:
+                callback(seed)
+                return
+
+        # wait for a master and avaiable seed
+        IOLoop.instance().add_callback(partial(self._get_master_seed, callback))
+
+    def _get_slave_seed(self, callback):
+
+        for seed in self._seeds:
+            if seed.available and not seed.is_master:
+                callback(seed)
+                return
+
+        # slave seed not found, getting master seed
+        self._get_master_seed(callback=callback)
+
+    @gen.engine
+    def get_connection(self, is_master=False, callback=None):
+        if not is_master:
+            seed = yield gen.Task(self._get_slave_seed)
+        else:
+            seed = yield gen.Task(self._get_master_seed)
+
+        connection = yield gen.Task(seed.pool.connection)
+        callback(connection)
 
     @classmethod
     def connect(cls, addresses, dbname, **kwargs):
@@ -75,20 +171,18 @@ class Database(object):
         if not cls._instance:
             raise ValueError("Database isn't connected")
 
-        cls._instance._pool.close()
         cls._instance = None
 
     @gen.engine
-    def send_message(self, message, callback=None):
+    def send_message(self, message, is_master=False, callback=None):
 
-        connection = yield gen.Task(self._pool.connection)
+        connection = yield gen.Task(self.get_connection, is_master)
         try:
             connection.send_message(message, callback=callback)
         except:
             connection.close()
             raise
 
-    @gen.engine
     def command(self, command, value=1, callback=None, check=True,
         allowable_errors=[], **kwargs):
         """Issue a MongoDB command.
@@ -138,7 +232,10 @@ class Database(object):
             command = SON([(command, value)])
 
         command.update(kwargs)
+        self._command(command, callback=callback)
 
+    def _command(self, command, connection=None, callback=None):
         from mongotor.cursor import Cursor
-        cursor = Cursor('$cmd', command, is_command=True)
+
+        cursor = Cursor('$cmd', command, is_command=True, is_master=True, connection=connection)
         cursor.find(limit=-1, callback=callback)

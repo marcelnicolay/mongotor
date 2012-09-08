@@ -28,18 +28,21 @@ class ConnectionPool(object):
       - `maxconnections` (optional): maximum open connections for this pool. 0 for unlimited
       - `maxusage` (optional): number of requests allowed on a connection before it is closed. 0 for unlimited
       - `dbname`: mongo database name
-      - `autoreconnnect`: autoreconnnect on database
+      - `autoreconnect`: autoreconnect on database
 
     """
-    def __init__(self, address, dbname, maxconnections=0,
-        maxusage=0, autoreconnect=True):
+    def __init__(self, host, port, dbname, maxconnections=0, maxusage=0,
+        autoreconnect=True):
 
+        assert isinstance(host, (str, unicode))
+        assert isinstance(port, int)
         assert isinstance(maxconnections, int)
         assert isinstance(maxusage, int)
         assert isinstance(dbname, (str, unicode))
         assert isinstance(autoreconnect, bool)
 
-        self._address = address
+        self._host = host
+        self._port = port
         self._maxconnections = maxconnections
         self._maxusage = maxusage
         self._autoreconnect = autoreconnect
@@ -48,8 +51,8 @@ class ConnectionPool(object):
         self._condition = Condition()
 
     def _create_connection(self):
-        host, port = self._address
-        return Connection(host=host, port=port, pool=self, autoreconnect=self._autoreconnect)
+        return Connection(host=self._host, port=self._port, pool=self,
+            autoreconnect=self._autoreconnect)
 
     def connection(self, callback):
         """Get a connection from pool

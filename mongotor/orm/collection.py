@@ -102,7 +102,8 @@ class Collection(object):
         message_insert = message.insert(collection_name, [self.as_dict()],
             True, safe, {})
 
-        response, error = yield gen.Task(database.send_message, message_insert)
+        response, error = yield gen.Task(database.send_message, message_insert,
+            is_master=True)
 
         post_save.send(instance=self)
 
@@ -125,7 +126,8 @@ class Collection(object):
         message_delete = message.delete(collection_name, {'_id': self._id},
             safe, {})
 
-        response, error = yield gen.Task(database.send_message, message_delete)
+        response, error = yield gen.Task(database.send_message, message_delete,
+            is_master=True)
 
         post_remove.send(instance=self)
 
@@ -152,7 +154,8 @@ class Collection(object):
         message_update = message.update(collection_name, False,
                 False, spec, document, safe, {})
 
-        response, error = yield gen.Task(database.send_message, message_update)
+        response, error = yield gen.Task(database.send_message, message_update,
+            is_master=True)
 
         post_update.send(instance=self)
 

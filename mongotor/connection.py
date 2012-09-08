@@ -119,4 +119,3 @@ class Connection(object):
 
         except IOError, e:
             raise e
-
