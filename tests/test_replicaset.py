@@ -16,8 +16,8 @@ class ReplicaSetTestCase(testing.AsyncTestCase):
         super(ReplicaSetTestCase, self).tearDown()
         Database._instance = None
 
-    def test_configure_seeds_when_one_node_is_unavailable(self):
-        """[ReplicaSetTestCase] - Configure seeds when one node is unavailable"""
+    def test_configure_nodes_when_one_node_is_unavailable(self):
+        """[ReplicaSetTestCase] - Configure nodes when one node is unavailable"""
 
         os.system('make mongo-kill > /dev/null 2>&1')
         os.system('make mongo-start-node1 > /dev/null 2>&1')
@@ -28,17 +28,17 @@ class ReplicaSetTestCase(testing.AsyncTestCase):
 
         Database.connect(["localhost:27027", "localhost:27028"], dbname='test')
 
-        Database()._get_master_seed(callback=self.stop)
-        master_seed = self.wait()
+        Database()._get_master_node(callback=self.stop)
+        master_node = self.wait()
 
-        master_seed.host.should.be('localhost')
-        master_seed.port.should.be(27027)
+        master_node.host.should.be('localhost')
+        master_node.port.should.be(27027)
 
-        seeds = Database()._seeds
-        seeds.should.have.length_of(2)
+        nodes = Database()._nodes
+        nodes.should.have.length_of(2)
 
-        for seed in seeds:
-            if seed.port == 27028:
-                seed.available.shouldnot.be.ok
+        for node in nodes:
+            if node.port == 27028:
+                node.available.shouldnot.be.ok
 
         os.system('make mongo-start > /dev/null 2>&1')

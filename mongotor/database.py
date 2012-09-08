@@ -28,8 +28,8 @@ from mongotor.errors import InterfaceError
 logger = logging.getLogger(__name__)
 
 
-class Seed(object):
-    """Seed is a node of database cluster
+class Node(object):
+    """Node of database cluster
     """
 
     def __init__(self, host, port, dbname, pool_kargs=None):
@@ -45,7 +45,8 @@ class Seed(object):
         self.dbname = dbname
         self.pool_kargs = pool_kargs
 
-        self.is_master = False
+        self.is_primary = False
+        self.is_secondary = False
         self.available = False
 
         self.pool = ConnectionPool(self.host, self.port, self.dbname, **self.pool_kargs)
@@ -60,13 +61,14 @@ class Seed(object):
             response, error = yield gen.Task(Database()._command, ismaster,
                 connection=conn)
         except InterfaceError, ie:
-            logger.error('oops, database seed {host}:{port} is unavailable: {error}' \
+            logger.error('oops, database node {host}:{port} is unavailable: {error}' \
                 .format(host=self.host, port=self.port, error=ie))
         else:
             conn.close()
 
         if response:
             self.is_master = response['ismaster']
+            self.is_secondary = response['secondary']
             self.available = True
             callback()
         else:
@@ -93,14 +95,14 @@ class Database(object):
         self._addresses = self._parse_addresses(addresses)
         self._dbname = dbname
         self._connected = False
-        self._seeds = []
+        self._nodes = []
         self._pool_kwargs = kwargs
 
         for host, port in self._addresses:
-            seed = Seed(host, port, self._dbname, self._pool_kwargs)
-            self._seeds.append(seed)
+            node = Node(host, port, self._dbname, self._pool_kwargs)
+            self._nodes.append(node)
 
-        IOLoop.instance().add_callback(self._config_seeds)
+        IOLoop.instance().add_callback(self._config_nodes)
 
     def get_collection_name(self, collection):
         return u'%s.%s' % (self._dbname, collection)
@@ -119,40 +121,40 @@ class Database(object):
         return parsed_addresses
 
     @gen.engine
-    def _config_seeds(self):
+    def _config_nodes(self):
 
-        for seed in self._seeds:
-            yield gen.Task(seed.config)
+        for node in self._nodes:
+            yield gen.Task(node.config)
 
-        IOLoop.instance().add_timeout(timedelta(seconds=10), self._config_seeds)
+        IOLoop.instance().add_timeout(timedelta(seconds=10), self._config_nodes)
 
-    def _get_master_seed(self, callback):
-        for seed in self._seeds:
-            if seed.available and seed.is_master:
-                callback(seed)
+    def _get_master_node(self, callback):
+        for node in self._nodes:
+            if node.available and node.is_master:
+                callback(node)
                 return
 
-        # wait for a master and avaiable seed
-        IOLoop.instance().add_callback(partial(self._get_master_seed, callback))
+        # wait for a master and avaiable node
+        IOLoop.instance().add_callback(partial(self._get_master_node, callback))
 
-    def _get_slave_seed(self, callback):
+    def _get_slave_node(self, callback):
 
-        for seed in self._seeds:
-            if seed.available and not seed.is_master:
-                callback(seed)
+        for node in self._nodes:
+            if node.available and not node.is_master:
+                callback(node)
                 return
 
-        # slave seed not found, getting master seed
-        self._get_master_seed(callback=callback)
+        # slave node not found, getting master node
+        self._get_master_node(callback=callback)
 
     @gen.engine
     def get_connection(self, is_master=False, callback=None):
         if not is_master:
-            seed = yield gen.Task(self._get_slave_seed)
+            node = yield gen.Task(self._get_slave_node)
         else:
-            seed = yield gen.Task(self._get_master_seed)
+            node = yield gen.Task(self._get_master_node)
 
-        connection = yield gen.Task(seed.pool.connection)
+        connection = yield gen.Task(node.pool.connection)
         callback(connection)
 
     @classmethod
@@ -177,8 +179,8 @@ class Database(object):
         if not cls._instance:
             raise ValueError("Database isn't connected")
 
-        for seed in cls._instance._seeds:
-            seed.disconnect()
+        for node in cls._instance._nodes:
+            node.disconnect()
 
         cls._instance = None
 

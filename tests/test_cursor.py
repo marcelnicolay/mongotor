@@ -34,7 +34,7 @@ class CursorTestCase(testing.AsyncTestCase):
         Database().send_message(message_insert, callback=self.stop)
         self.wait()
 
-    def test_find_document_whitout_spect(self):
+    def test_find_document_whitout_spec(self):
         """[CursorTestCase] - Find one document without spec"""
 
         document = {'_id': ObjectId(), 'name': 'should be name'}
@@ -83,7 +83,7 @@ class CursorTestCase(testing.AsyncTestCase):
         document3 = {'_id': ObjectId(), 'name': 'should be name 3', 'flag': 1}
         self._insert_document(document3)
 
-        cursor = Cursor('cursor_test', spec={'flag': 1})
+        cursor = Cursor('cursor_test', {'flag': 1})
         cursor.find(limit=2, callback=self.stop)
 
         result, error = self.wait()

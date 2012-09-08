@@ -15,10 +15,12 @@
 #     def setUp(self):
 #         super(SignalTestCase, self).setUp()
 #         SignalTestCase.signal_triggered = False
-#         Database.connect('localhost', 27017, 'asyncmongo_test')
+#         Database.connect(["localhost:27027", "localhost:27028"], dbname='mongotor_test')
 
 #     def tearDown(self):
 #         super(SignalTestCase, self).tearDown()
+#         CollectionTest.objects.truncate(callback=self.stop)
+#         self.wait()
 #         Database.disconnect()
 
 #     def test_save_sends_pre_save_signal_correctly_and_I_can_handle_the_collection_instance(self):

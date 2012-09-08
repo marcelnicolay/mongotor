@@ -35,14 +35,14 @@ class Cursor(object):
     """A cursor / iterator over Mongo query results.
     """
 
-    def __init__(self, collection, spec=None, fields=None, snapshot=False,
+    def __init__(self, collection, spec_or_id=None, fields=None, snapshot=False,
         tailable=False, max_scan=None, is_command=False, explain=False,
         hint=None, timeout=True, slave_okay=True, is_master=False, connection=None):
 
-        if spec is not None and not isinstance(spec, dict):
-            spec = {"_id": spec}
+        if spec_or_id is not None and not isinstance(spec_or_id, dict):
+            spec_or_id = {"_id": spec_or_id}
 
-        self._spec = spec or {}
+        self._spec = spec_or_id or {}
         self._fields = fields
         self._snapshot = snapshot
         self._tailable = tailable
