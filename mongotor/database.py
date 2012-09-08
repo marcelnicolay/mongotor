@@ -32,13 +32,26 @@ class Database(object):
         return cls._instance
 
     def init(self, addresses, dbname, **kwargs):
-        self._addresses = addresses
+        self._addresses = self._parse_addresses(addresses)
         self._dbname = dbname
 
-        self._pool = ConnectionPool(addresses, dbname, **kwargs)
+        self._pool = ConnectionPool(self._addresses[0], dbname, **kwargs)
 
     def get_collection_name(self, collection):
         return u'%s.%s' % (self._dbname, collection)
+
+    def _parse_addresses(self, addresses):
+        if isinstance(addresses, (str, unicode)):
+            addresses = [addresses]
+
+        assert isinstance(addresses, list)
+
+        parsed_addresses = []
+        for address in addresses:
+            host, port = address.split(":")
+            parsed_addresses.append((host, int(port)))
+
+        return parsed_addresses
 
     @classmethod
     def connect(cls, addresses, dbname, **kwargs):

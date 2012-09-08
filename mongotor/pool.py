@@ -23,7 +23,7 @@ from mongotor.connection import Connection
 
 class ConnectionPool(object):
     """Connection Pool
-    
+
     :Parameters:
       - `maxconnections` (optional): maximum open connections for this pool. 0 for unlimited
       - `maxusage` (optional): number of requests allowed on a connection before it is closed. 0 for unlimited
@@ -31,38 +31,25 @@ class ConnectionPool(object):
       - `autoreconnnect`: autoreconnnect on database
 
     """
-    def __init__(self, addresses, dbname, maxconnections=0,
-        maxusage=0, autoreconnnect=True):
+    def __init__(self, address, dbname, maxconnections=0,
+        maxusage=0, autoreconnect=True):
 
         assert isinstance(maxconnections, int)
         assert isinstance(maxusage, int)
         assert isinstance(dbname, (str, unicode))
-        assert isinstance(autoreconnnect, bool)
+        assert isinstance(autoreconnect, bool)
 
-        self._addresses = self._parse_addresses(addresses)
+        self._address = address
         self._maxconnections = maxconnections
         self._maxusage = maxusage
-        self._autoreconnnect = autoreconnnect
+        self._autoreconnect = autoreconnect
         self._connections = 0
         self._idle_connections = []
         self._condition = Condition()
 
-    def _parse_addresses(self, addresses):
-        if isinstance(addresses, (str, unicode)):
-            addresses = [addresses]
-
-        assert isinstance(addresses, list)
-
-        parsed_addresses = []
-        for address in addresses:
-            host, port = address.split(":")
-            parsed_addresses.append((host, int(port)))
-
-        return parsed_addresses
-
     def _create_connection(self):
-        host, port = self._addresses[0]
-        return Connection(self, host, port, self._autoreconnnect)
+        host, port = self._address
+        return Connection(host=host, port=port, pool=self, autoreconnect=self._autoreconnect)
 
     def connection(self, callback):
         """Get a connection from pool
