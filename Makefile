@@ -14,7 +14,7 @@ mongo-start: mongo-kill
 	
 	echo "startin mongo instance"
 	${MONGOD} --port=27027 --dbpath=${MONGO_DATA}/db/node1 --replSet=mongotor --logpath=${MONGO_DATA}/log/node1.log --fork > /dev/null 2>&1
-#	${MONGOD} --port=27028 --dbpath=${MONGO_DATA}/db/node2 --replSet=mongotor --logpath=${MONGO_DATA}/log/node2.log --fork > /dev/null 2>&1
+	${MONGOD} --port=27028 --dbpath=${MONGO_DATA}/db/node2 --replSet=mongotor --logpath=${MONGO_DATA}/log/node2.log --fork > /dev/null 2>&1
 	${MONGOD} --port=27029 --dbpath=${MONGO_DATA}/db/arbiter --replSet=mongotor --logpath=${MONGO_DATA}/log/arbiter.log --fork > /dev/null 2>&1
 
 mongo-kill:
