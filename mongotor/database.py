@@ -183,7 +183,7 @@ class Database(object):
             connection.close()
             raise
 
-    def command(self, command, value=1, callback=None, check=True,
+    def command(self, command, value=1, is_master=True, callback=None, check=True,
         allowable_errors=[], **kwargs):
         """Issue a MongoDB command.
 
@@ -232,10 +232,10 @@ class Database(object):
             command = SON([(command, value)])
 
         command.update(kwargs)
-        self._command(command, callback=callback)
+        self._command(command, is_master=True, callback=callback)
 
-    def _command(self, command, connection=None, callback=None):
+    def _command(self, command, is_master=True, connection=None, callback=None):
         from mongotor.cursor import Cursor
 
-        cursor = Cursor('$cmd', command, is_command=True, is_master=True, connection=connection)
+        cursor = Cursor('$cmd', command, is_command=True, is_master=is_master, connection=connection)
         cursor.find(limit=-1, callback=callback)

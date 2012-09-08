@@ -17,7 +17,7 @@ class CollectionTestCase(testing.AsyncTestCase):
 
     def setUp(self):
         super(CollectionTestCase, self).setUp()
-        Database.connect(["localhost:27027"], dbname='test')
+        Database.connect(["localhost:27027", "localhost:27028"], dbname='test')
 
     def tearDown(self):
         super(CollectionTestCase, self).tearDown()
