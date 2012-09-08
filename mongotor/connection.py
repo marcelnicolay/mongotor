@@ -43,7 +43,7 @@ class Connection(object):
             s.connect((self._host, self._port))
 
             self._stream = iostream.IOStream(s)
-            self._stream.set_close_callback(self.close)
+            self._stream.set_close_callback(self._close_stream)
 
             self._connected = True
 
@@ -81,6 +81,9 @@ class Connection(object):
 
         logger.info('response: %s' % response)
         return response, None
+
+    def _close_stream(self):
+        self._connected = False
 
     def close(self):
         self._connected = False
