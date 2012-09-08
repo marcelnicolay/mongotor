@@ -17,6 +17,7 @@
 
 import logging
 from functools import partial
+from datetime import timedelta
 from tornado import gen
 from tornado.ioloop import IOLoop
 from bson import SON
@@ -51,17 +52,17 @@ class Seed(object):
 
     @gen.engine
     def config(self, callback):
-        conn = Connection(self.host, self.port)
         ismaster = SON([('ismaster', 1)])
 
         response = None
         try:
+            conn = Connection(self.host, self.port)
             response, error = yield gen.Task(Database()._command, ismaster,
                 connection=conn)
         except InterfaceError, ie:
             logger.error('oops, database seed {host}:{port} is unavailable: {error}' \
                 .format(host=self.host, port=self.port, error=ie))
-        finally:
+        else:
             conn.close()
 
         if response:
@@ -87,6 +88,7 @@ class Database(object):
 
         return cls._instance
 
+    @gen.engine
     def init(self, addresses, dbname, **kwargs):
         self._addresses = self._parse_addresses(addresses)
         self._dbname = dbname
@@ -94,7 +96,11 @@ class Database(object):
         self._seeds = []
         self._pool_kwargs = kwargs
 
-        self._config_seeds()
+        for host, port in self._addresses:
+            seed = Seed(host, port, self._dbname, self._pool_kwargs)
+            self._seeds.append(seed)
+
+        IOLoop.instance().add_callback(self._config_seeds)
 
     def get_collection_name(self, collection):
         return u'%s.%s' % (self._dbname, collection)
@@ -115,13 +121,10 @@ class Database(object):
     @gen.engine
     def _config_seeds(self):
 
-        if not self._seeds:
-            for host, port in self._addresses:
-                seed = Seed(host, port, self._dbname, self._pool_kwargs)
-                self._seeds.append(seed)
-
         for seed in self._seeds:
             yield gen.Task(seed.config)
+
+        IOLoop.instance().add_timeout(timedelta(seconds=10), self._config_seeds)
 
     def _get_master_seed(self, callback):
         for seed in self._seeds:

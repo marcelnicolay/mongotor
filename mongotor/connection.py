@@ -27,11 +27,12 @@ logger = logging.getLogger(__name__)
 
 class Connection(object):
 
-    def __init__(self, host, port, pool=None, autoreconnect=True):
+    def __init__(self, host, port, pool=None, autoreconnect=True, timeout=5):
         self._host = host
         self._port = port
         self._pool = pool
         self._autoreconnect = autoreconnect
+        self._timeout = timeout
         self._connected = False
 
         self._connect()
@@ -39,6 +40,7 @@ class Connection(object):
     def _connect(self):
 
         try:
+            socket.timeout(self._timeout)
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
             s.connect((self._host, self._port))
 
