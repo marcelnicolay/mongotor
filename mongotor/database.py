@@ -72,6 +72,9 @@ class Seed(object):
             self.available = False
             callback()
 
+    def disconnect(self):
+        self.pool.close()
+
 
 class Database(object):
     """Database object
@@ -170,6 +173,9 @@ class Database(object):
     def disconnect(cls):
         if not cls._instance:
             raise ValueError("Database isn't connected")
+
+        for seed in cls._instance._seeds:
+            seed.disconnect()
 
         cls._instance = None
 

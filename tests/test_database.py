@@ -33,7 +33,7 @@ class DatabaseTestCase(testing.AsyncTestCase):
     def test_send_test_message(self):
         """[DatabaseTestCase] - Send a test message to database"""
 
-        Database.connect(["localhost:27027"], dbname='test')
+        Database.connect(["localhost:27027", "localhost:27028"], dbname='test')
 
         object_id = ObjectId()
         message_test = message.query(0, 'mongotor_test.$cmd', 0, 1,
