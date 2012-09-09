@@ -110,10 +110,14 @@ class Database(object):
     def connect(cls, addresses, dbname, **kwargs):
         """Connect to database
 
+        >>> Database.connect(['localhost:27017', 'localhost:27018'], 'test', maxconnections=100)
+
         :Parameters:
-          - `addresses` :
-          - `dbname` : database name
-          - `kwargs` : kwargs passed to connection pool
+          - `addresses` : addresses can be a list or a simple string, host:port
+          - `dbname` : mongo database name
+          - `maxconnections` (optional): maximum open connections for pool. 0 for unlimited
+          - `maxusage` (optional): number of requests allowed on a connection before it is closed. 0 for unlimited
+          - `autoreconnect`: autoreconnect to database. default is True
         """
         if cls._instance and hasattr(cls._instance, '_initialized'):
             return cls._instance
