@@ -2,6 +2,7 @@
 from tornado.ioloop import IOLoop
 from tornado import testing
 from mongotor.database import Database
+from mongotor.node import ReadPreference
 import sure
 import os
 import time
@@ -28,8 +29,7 @@ class ReplicaSetTestCase(testing.AsyncTestCase):
 
         Database.connect(["localhost:27027", "localhost:27028"], dbname='test')
 
-        Database()._get_master_node(callback=self.stop)
-        master_node = self.wait()
+        master_node = ReadPreference.select_primary_node(Database()._nodes)
 
         master_node.host.should.be('localhost')
         master_node.port.should.be(27027)

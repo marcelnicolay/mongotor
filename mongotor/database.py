@@ -15,68 +15,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import logging
 from functools import partial
 from datetime import timedelta
 from tornado import gen
 from tornado.ioloop import IOLoop
 from bson import SON
-from mongotor.pool import ConnectionPool
-from mongotor.connection import Connection
-from mongotor.errors import InterfaceError
-
-logger = logging.getLogger(__name__)
-
-
-class Node(object):
-    """Node of database cluster
-    """
-
-    def __init__(self, host, port, dbname, pool_kargs=None):
-        if not pool_kargs:
-            pool_kargs = {}
-
-        assert isinstance(host, (str, unicode))
-        assert isinstance(dbname, (str, unicode))
-        assert isinstance(port, int)
-
-        self.host = host
-        self.port = port
-        self.dbname = dbname
-        self.pool_kargs = pool_kargs
-
-        self.is_primary = False
-        self.is_secondary = False
-        self.available = False
-
-        self.pool = ConnectionPool(self.host, self.port, self.dbname, **self.pool_kargs)
-
-    @gen.engine
-    def config(self, callback):
-        ismaster = SON([('ismaster', 1)])
-
-        response = None
-        try:
-            conn = Connection(self.host, self.port)
-            response, error = yield gen.Task(Database()._command, ismaster,
-                connection=conn)
-        except InterfaceError, ie:
-            logger.error('oops, database node {host}:{port} is unavailable: {error}' \
-                .format(host=self.host, port=self.port, error=ie))
-        else:
-            conn.close()
-
-        if response:
-            self.is_master = response['ismaster']
-            self.is_secondary = response['secondary']
-            self.available = True
-            callback()
-        else:
-            self.available = False
-            callback()
-
-    def disconnect(self):
-        self.pool.close()
+from mongotor.node import Node, ReadPreference
+from mongotor.errors import DatabaseError
 
 
 class Database(object):
@@ -99,10 +44,35 @@ class Database(object):
         self._pool_kwargs = kwargs
 
         for host, port in self._addresses:
-            node = Node(host, port, self._dbname, self._pool_kwargs)
+            node = Node(host, port, self, self._pool_kwargs)
             self._nodes.append(node)
 
-        IOLoop.instance().add_callback(self._config_nodes)
+        self._initialized = False
+
+        ioloop_is_running = IOLoop.instance().running()
+        self._config_nodes(callback=partial(self._on_config_node, ioloop_is_running))
+
+        while True:
+            if not ioloop_is_running:
+                IOLoop.instance().start()
+
+            if self._initialized:
+                break
+
+        IOLoop.instance().add_timeout(timedelta(seconds=10), self._config_nodes)
+
+    def _on_config_node(self, ioloop_is_running):
+        for node in self._nodes:
+            if not node.initialized:
+                return
+
+        self._initialized = True
+        if not ioloop_is_running:
+            IOLoop.instance().stop()
+
+    @property
+    def dbname(self):
+        return self._dbname
 
     def get_collection_name(self, collection):
         return u'%s.%s' % (self._dbname, collection)
@@ -120,42 +90,10 @@ class Database(object):
 
         return parsed_addresses
 
-    @gen.engine
-    def _config_nodes(self):
+    def _config_nodes(self, callback=None):
 
         for node in self._nodes:
-            yield gen.Task(node.config)
-
-        IOLoop.instance().add_timeout(timedelta(seconds=10), self._config_nodes)
-
-    def _get_master_node(self, callback):
-        for node in self._nodes:
-            if node.available and node.is_master:
-                callback(node)
-                return
-
-        # wait for a master and avaiable node
-        IOLoop.instance().add_callback(partial(self._get_master_node, callback))
-
-    def _get_slave_node(self, callback):
-
-        for node in self._nodes:
-            if node.available and not node.is_master:
-                callback(node)
-                return
-
-        # slave node not found, getting master node
-        self._get_master_node(callback=callback)
-
-    @gen.engine
-    def get_connection(self, is_master=False, callback=None):
-        if not is_master:
-            node = yield gen.Task(self._get_slave_node)
-        else:
-            node = yield gen.Task(self._get_master_node)
-
-        connection = yield gen.Task(node.pool.connection)
-        callback(connection)
+            node.config(callback)
 
     @classmethod
     def connect(cls, addresses, dbname, **kwargs):
@@ -167,7 +105,7 @@ class Database(object):
           - `kwargs` : kwargs passed to connection pool
         """
         if cls._instance:
-            raise ValueError('Database already intiated')
+            return cls._instance
 
         database = Database()
         database.init(addresses, dbname, **kwargs)
@@ -185,17 +123,22 @@ class Database(object):
         cls._instance = None
 
     @gen.engine
-    def send_message(self, message, is_master=False, callback=None):
+    def send_message(self, message, read_preference=ReadPreference.PRIMARY,
+        callback=None):
 
-        connection = yield gen.Task(self.get_connection, is_master)
+        node = ReadPreference.select_node(self._nodes, read_preference)
+        if not node:
+            raise DatabaseError('could not find an available node')
+
+        connection = yield gen.Task(node.pool.connection)
         try:
             connection.send_message(message, callback=callback)
         except:
             connection.close()
             raise
 
-    def command(self, command, value=1, is_master=True, callback=None, check=True,
-        allowable_errors=[], **kwargs):
+    def command(self, command, value=1, read_preference=ReadPreference.PRIMARY,
+        callback=None, check=True, allowable_errors=[], **kwargs):
         """Issue a MongoDB command.
 
         Send command `command` to the database and return the
@@ -243,10 +186,13 @@ class Database(object):
             command = SON([(command, value)])
 
         command.update(kwargs)
-        self._command(command, is_master=True, callback=callback)
+        self._command(command, read_preference=read_preference, callback=callback)
 
-    def _command(self, command, is_master=True, connection=None, callback=None):
+    def _command(self, command, read_preference=ReadPreference.PRIMARY,
+        connection=None, callback=None):
+
         from mongotor.cursor import Cursor
+        cursor = Cursor('$cmd', command, is_command=True, connection=connection,
+            read_preference=read_preference)
 
-        cursor = Cursor('$cmd', command, is_command=True, is_master=is_master, connection=connection)
         cursor.find(limit=-1, callback=callback)

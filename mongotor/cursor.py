@@ -19,7 +19,7 @@ from tornado import gen
 from bson import SON
 from mongotor import message
 from mongotor.database import Database
-
+from mongotor.node import ReadPreference
 
 _QUERY_OPTIONS = {
     "tailable_cursor": 2,
@@ -36,8 +36,9 @@ class Cursor(object):
     """
 
     def __init__(self, collection, spec_or_id=None, fields=None, snapshot=False,
-        tailable=False, max_scan=None, is_command=False, explain=False,
-        hint=None, timeout=True, slave_okay=True, is_master=False, connection=None):
+        tailable=False, max_scan=None, is_command=False, explain=False, hint=None,
+        read_preference=ReadPreference.PRIMARY, timeout=True, slave_okay=True,
+        is_master=False, connection=None):
 
         if spec_or_id is not None and not isinstance(spec_or_id, dict):
             spec_or_id = {"_id": spec_or_id}
@@ -54,6 +55,7 @@ class Cursor(object):
         self._is_command = is_command
         self._explain = explain
         self._slave_okay = slave_okay
+        self._read_preference = read_preference
         self._is_master = is_master
         self._connection = connection
 
@@ -68,7 +70,7 @@ class Cursor(object):
             response, error = yield gen.Task(self._connection.send_message, message_query)
         else:
             response, error = yield gen.Task(Database().send_message, message_query,
-                is_master=self._is_master)
+                read_preference=self._read_preference)
 
         # close cursor
         if response and response.get('cursor_id'):
@@ -78,7 +80,7 @@ class Cursor(object):
                 self._connection.send_message(message.kill_cursors([cursor_id]), callback=None)
             else:
                 Database().send_message(message.kill_cursors([cursor_id]),
-                    is_master=self._is_master, callback=None)
+                    callback=None)
 
         if error:
             callback((None, error))

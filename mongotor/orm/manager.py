@@ -165,7 +165,7 @@ class Manager(object):
         collection_name = Database().get_collection_name(self.collection.__collection__)
         message_delete = message.delete(collection_name, {}, True, {})
 
-        yield gen.Task(Database().send_message, message_delete, is_master=True)
+        yield gen.Task(Database().send_message, message_delete)
 
         if callback:
             callback()
