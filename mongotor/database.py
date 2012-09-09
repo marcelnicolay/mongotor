@@ -46,7 +46,6 @@ class Database(object):
 
         return cls._instance
 
-    @gen.engine
     def init(self, addresses, dbname, **kwargs):
         self._addresses = self._parse_addresses(addresses)
         self._dbname = dbname
