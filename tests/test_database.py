@@ -19,15 +19,15 @@ class DatabaseTestCase(testing.AsyncTestCase):
 
     def test_create_singleton_database_connection(self):
         """[DatabaseTestCase] - Create a singleton database connection"""
-        database = Database.connect(["localhost:27027"], dbname='test')
+        database = Database.connect("localhost:27027", dbname='test')
 
         database.should.be.equal(Database())
 
     def test_not_raise_when_database_was_initiated(self):
         """[DatabaseTestCase] - Not raises ValueError when connect to inititated database"""
 
-        database1 = Database.connect(["localhost:27027"], dbname='test')
-        database2 = Database.connect(["localhost:27027"], dbname='test')
+        database1 = Database.connect("localhost:27027", dbname='test')
+        database2 = Database.connect("localhost:27027", dbname='test')
 
         database1.should.be.equal(database2)
 
