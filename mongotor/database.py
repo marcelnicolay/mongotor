@@ -15,13 +15,24 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from functools import partial
+from functools import partial, wraps
 from datetime import timedelta
 from tornado import gen
 from tornado.ioloop import IOLoop
 from bson import SON
 from mongotor.node import Node, ReadPreference
 from mongotor.errors import DatabaseError
+
+
+def connected(fn):
+    @wraps(fn)
+    def wrapped(self, *args, **kwargs):
+        if not hasattr(self, '_initialized'):
+            raise DatabaseError("you must be connect to database before perform this action")
+
+        return fn(self, *args, **kwargs)
+
+    return wrapped
 
 
 class Database(object):
@@ -42,12 +53,11 @@ class Database(object):
         self._connected = False
         self._nodes = []
         self._pool_kwargs = kwargs
+        self._initialized = False
 
         for host, port in self._addresses:
             node = Node(host, port, self, self._pool_kwargs)
             self._nodes.append(node)
-
-        self._initialized = False
 
         ioloop_is_running = IOLoop.instance().running()
         self._config_nodes(callback=partial(self._on_config_node, ioloop_is_running))
@@ -74,8 +84,9 @@ class Database(object):
     def dbname(self):
         return self._dbname
 
+    @connected
     def get_collection_name(self, collection):
-        return u'%s.%s' % (self._dbname, collection)
+        return u'%s.%s' % (self.dbname, collection)
 
     def _parse_addresses(self, addresses):
         if isinstance(addresses, (str, unicode)):
@@ -104,7 +115,7 @@ class Database(object):
           - `dbname` : database name
           - `kwargs` : kwargs passed to connection pool
         """
-        if cls._instance:
+        if cls._instance and hasattr(cls._instance, '_initialized'):
             return cls._instance
 
         database = Database()
@@ -114,7 +125,7 @@ class Database(object):
 
     @classmethod
     def disconnect(cls):
-        if not cls._instance:
+        if not cls._instance or not hasattr(cls._instance, '_initialized'):
             raise ValueError("Database isn't connected")
 
         for node in cls._instance._nodes:
@@ -123,6 +134,7 @@ class Database(object):
         cls._instance = None
 
     @gen.engine
+    @connected
     def send_message(self, message, read_preference=ReadPreference.PRIMARY,
         callback=None):
 
@@ -137,6 +149,7 @@ class Database(object):
             connection.close()
             raise
 
+    @connected
     def command(self, command, value=1, read_preference=ReadPreference.PRIMARY,
         callback=None, check=True, allowable_errors=[], **kwargs):
         """Issue a MongoDB command.

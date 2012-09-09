@@ -6,6 +6,7 @@ from mongotor.orm.collection import Collection
 from mongotor.orm.manager import Manager
 from mongotor.orm.field import (ObjectIdField, StringField, DateTimeField,
     IntegerField, BooleanField, FloatField, ListField, ObjectField)
+from mongotor.errors import DatabaseError
 from bson.objectid import ObjectId
 import sure
 
@@ -164,3 +165,15 @@ class CollectionTestCase(testing.AsyncTestCase):
 
         issubclass(Collection("ChildCollectionTest"),\
             ChildCollectionTest).should.be.ok
+
+    def test_raises_erro_when_use_collection_with_not_connected_database(self):
+        """[CollectionTestCase] - Raises DatabaseError when use collection with a not connected database"""
+
+        class CollectionTest(Collection):
+            __collection__ = 'collection_test'
+
+        Database.disconnect()
+        CollectionTest().save.when.called_with(callback=None) \
+            .throw(DatabaseError, 'you must be connect')
+
+        Database.connect(["localhost:27027", "localhost:27028"], dbname='test')

@@ -2,6 +2,7 @@
 from tornado.ioloop import IOLoop
 from tornado import testing
 from mongotor.database import Database
+from mongotor.errors import DatabaseError
 from mongotor import message
 from bson.objectid import ObjectId
 import sure
@@ -87,3 +88,19 @@ class DatabaseTestCase(testing.AsyncTestCase):
     def test_raises_error_when_disconnect_a_not_connected_database(self):
         """[DatabaseTestCase] - Raises ValueError when disconnect from a not connected database"""
         Database.disconnect.when.called_with().throw(ValueError, "Database isn't connected")
+
+    def test_raises_error_when_could_not_find_node(self):
+        """[DatabaseTestCase] - Raises DatabaseError when could not find valid nodes"""
+
+        database = Database.connect(["localhost:27030"], dbname='test')
+        database.send_message.when.called_with("", callback=None) \
+            .throw(DatabaseError, 'could not find an available node')
+
+    def test_run_command(self):
+        """[DatabaseTestCase] - Run a database command"""
+
+        database = Database.connect(["localhost:27027"], dbname='test')
+        database.command('ismaster', callback=self.stop)
+
+        response, error = self.wait()
+        response['ok'].should.be.ok
