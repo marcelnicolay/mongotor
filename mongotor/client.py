@@ -30,21 +30,27 @@ class Client(object):
         self._collection_name = database.get_collection_name(collection)
 
     @gen.engine
-    def insert(self, document, safe=True, callback=None):
+    def insert(self, doc_or_docs, safe=True, check_keys=True, callback=None):
         """Insert a document
 
         :Parameters:
-        - `document`: a document or a list of documents
-        - `safe` (optional): safe insert operation
-        - `callback` : method which will be called when save is finished
+          - `doc_or_docs`: a document or list of documents to be
+            inserted
+          - `manipulate` (optional): manipulate the documents before
+            inserting?
+          - `safe` (optional): check that the insert succeeded?
+          - `check_keys` (optional): check if keys start with '$' or
+            contain '.', raising :class:`~pymongo.errors.InvalidName`
+            in either case
+          - `callback` : method which will be called when save is finished
         """
-        if isinstance(document, dict):
-            document = [document]
+        if isinstance(doc_or_docs, dict):
+            doc_or_docs = [doc_or_docs]
 
-        assert isinstance(document, list)
+        assert isinstance(doc_or_docs, list)
 
-        message_insert = message.insert(self._collection_name, document,
-            True, safe, {})
+        message_insert = message.insert(self._collection_name, doc_or_docs,
+            check_keys, safe, {})
 
         response, error = yield gen.Task(self._database.send_message,
             message_insert, ReadPreference.PRIMARY)
