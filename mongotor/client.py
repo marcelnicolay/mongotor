@@ -34,6 +34,7 @@ class Client(object):
         """Insert a document
 
         :Parameters:
+        - `document`: a document or a list of documents
         - `safe` (optional): safe insert operation
         - `callback` : method which will be called when save is finished
         """
@@ -47,6 +48,29 @@ class Client(object):
 
         response, error = yield gen.Task(self._database.send_message,
             message_insert, ReadPreference.PRIMARY)
+
+        if callback:
+            callback((response, error))
+
+    @gen.engine
+    def remove(self, spec_or_id={}, safe=True, callback=None):
+        """remove a document
+
+        :Parameters:
+        - `spec_or_id`: a query or a document id
+        - `safe` (optional): safe insert operation
+        - `callback` : method which will be called when save is finished
+        """
+        if not isinstance(spec_or_id, dict):
+            spec_or_id = {"_id": spec_or_id}
+
+        assert isinstance(spec_or_id, dict)
+
+        message_delete = message.delete(self._collection_name, spec_or_id,
+            safe, {})
+
+        response, error = yield gen.Task(self._database.send_message,
+            message_delete, ReadPreference.PRIMARY)
 
         if callback:
             callback((response, error))

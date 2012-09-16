@@ -43,3 +43,37 @@ class ClientTestCase(testing.AsyncTestCase):
 
         response['data'][0]['ok'].should.be.equal(1.0)
         error.should.be.none
+
+    def test_remove_document_by_id(self):
+        """[ClientTestCase] - remove a document by id"""
+        db = Database.connect(["localhost:27027", "localhost:27028"],
+            dbname='test')
+
+        documents = [{'_id': ObjectId(), 'name': 'shouldbename'},
+            {'_id': ObjectId(), 'name': 'shouldbename2'}]
+
+        db.collection_test.insert(documents, callback=self.stop)
+        response, error = self.wait()
+
+        db.collection_test.remove(documents[0]['_id'], callback=self.stop)
+        response, error = self.wait()
+
+        response['data'][0]['ok'].should.be.equal(1.0)
+        error.should.be.none
+
+    def test_remove_document_by_spec(self):
+        """[ClientTestCase] - remove a document by spec"""
+        db = Database.connect(["localhost:27027", "localhost:27028"],
+            dbname='test')
+
+        documents = [{'_id': ObjectId(), 'name': 'shouldbename'},
+            {'_id': ObjectId(), 'name': 'shouldbename2'}]
+
+        db.collection_test.insert(documents, callback=self.stop)
+        response, error = self.wait()
+
+        db.collection_test.remove({'name': 'shouldbename'}, callback=self.stop)
+        response, error = self.wait()
+
+        response['data'][0]['ok'].should.be.equal(1.0)
+        error.should.be.none
