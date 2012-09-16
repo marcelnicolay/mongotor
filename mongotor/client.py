@@ -80,3 +80,38 @@ class Client(object):
 
         if callback:
             callback((response, error))
+
+    @gen.engine
+    def update(self, spec, document, upsert=False, manipulate=False,
+        safe=True, multi=False, callback=None):
+        """Update a document(s) in this collection.
+
+        :Parameters:
+          - `spec`: a ``dict`` or :class:`~bson.son.SON` instance
+            specifying elements which must be present for a document
+            to be updated
+          - `document`: a ``dict`` or :class:`~bson.son.SON`
+            instance specifying the document to be used for the update
+            or (in the case of an upsert) insert - see docs on MongoDB
+            `update modifiers`_
+          - `upsert` (optional): perform an upsert if ``True``
+          - `safe` (optional): check that the update succeeded?
+          - `multi` (optional): update all documents that match
+            `spec`, rather than just the first matching document. The
+            default value for `multi` is currently ``False``, but this
+            might eventually change to ``True``. It is recommended
+            that you specify this argument explicitly for all update
+            operations in order to prepare your code for that change.
+        """
+        assert isinstance(spec, dict), "spec must be an instance of dict"
+        assert isinstance(document, dict), "document must be an instance of dict"
+        assert isinstance(upsert, bool), "upsert must be an instance of bool"
+        assert isinstance(safe, bool), "safe must be an instance of bool"
+
+        message_update = message.update(self._collection_name, upsert,
+                multi, spec, document, safe, {})
+
+        response, error = yield gen.Task(self._database.send_message,
+            message_update, ReadPreference.PRIMARY)
+
+        callback((response, error))

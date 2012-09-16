@@ -77,3 +77,21 @@ class ClientTestCase(testing.AsyncTestCase):
 
         response['data'][0]['ok'].should.be.equal(1.0)
         error.should.be.none
+
+    def test_update_document(self):
+        """[ClientTestCase] - update a document"""
+        db = Database.connect(["localhost:27027", "localhost:27028"],
+            dbname='test')
+
+        documents = [{'_id': ObjectId(), 'name': 'shouldbename'},
+            {'_id': ObjectId(), 'name': 'shouldbename2'}]
+
+        db.collection_test.insert(documents, callback=self.stop)
+        response, error = self.wait()
+
+        db.collection_test.update(documents[0], {'$set': {'name':
+            'should be a new name'}}, callback=self.stop)
+        response, error = self.wait()
+
+        response['data'][0]['ok'].should.be.equal(1.0)
+        error.should.be.none
