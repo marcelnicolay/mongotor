@@ -22,6 +22,7 @@ from tornado.ioloop import IOLoop
 from bson import SON
 from mongotor.node import Node, ReadPreference
 from mongotor.errors import DatabaseError
+from mongotor.client import Client
 
 
 def connected(fn):
@@ -46,10 +47,10 @@ class Database(object):
 
         return cls._instance
 
-    def init(self, addresses, dbname, **kwargs):
+    def init(self, addresses, dbname, read_preference=None, **kwargs):
         self._addresses = self._parse_addresses(addresses)
         self._dbname = dbname
-        self._connected = False
+        self._read_preference = read_preference or ReadPreference.PRIMARY
         self._nodes = []
         self._pool_kwargs = kwargs
         self._initialized = False
@@ -106,10 +107,12 @@ class Database(object):
             node.config(callback)
 
     @classmethod
-    def connect(cls, addresses, dbname, **kwargs):
+    def connect(cls, addresses, dbname, read_preference=None, **kwargs):
         """Connect to database
 
         >>> Database.connect(['localhost:27017', 'localhost:27018'], 'test', maxconnections=100)
+        >>> db = Database()
+        >>> db.collection.insert({...}, callback=...)
 
         :Parameters:
           - `addresses` : addresses can be a list or a simple string, host:port
@@ -122,7 +125,7 @@ class Database(object):
             return cls._instance
 
         database = Database()
-        database.init(addresses, dbname, **kwargs)
+        database.init(addresses, dbname, read_preference, **kwargs)
 
         return database
 
@@ -138,9 +141,10 @@ class Database(object):
 
     @gen.engine
     @connected
-    def send_message(self, message, read_preference=ReadPreference.PRIMARY,
+    def send_message(self, message, read_preference=None,
         callback=None):
 
+        read_preference = read_preference or self._read_preference
         node = ReadPreference.select_node(self._nodes, read_preference)
         if not node:
             raise DatabaseError('could not find an available node')
@@ -153,7 +157,7 @@ class Database(object):
             raise
 
     @connected
-    def command(self, command, value=1, read_preference=ReadPreference.PRIMARY,
+    def command(self, command, value=1, read_preference=None,
         callback=None, check=True, allowable_errors=[], **kwargs):
         """Issue a MongoDB command.
 
@@ -202,13 +206,24 @@ class Database(object):
             command = SON([(command, value)])
 
         command.update(kwargs)
+
+        read_preference = read_preference or self._read_preference
         self._command(command, read_preference=read_preference, callback=callback)
 
-    def _command(self, command, read_preference=ReadPreference.PRIMARY,
+    def _command(self, command, read_preference=None,
         connection=None, callback=None):
 
+        read_preference = read_preference or self._read_preference
         from mongotor.cursor import Cursor
         cursor = Cursor('$cmd', command, is_command=True, connection=connection,
             read_preference=read_preference)
 
         cursor.find(limit=-1, callback=callback)
+
+    def __getattr__(self, name):
+        """Get a client collection by name.
+
+        :Parameters:
+          - `name`: the name of the collection
+        """
+        return Client(self, name)

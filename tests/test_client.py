@@ -1,0 +1,45 @@
+# coding: utf-8
+from tornado.ioloop import IOLoop
+from tornado import testing
+from mongotor.database import Database
+from bson import ObjectId
+import sure
+
+
+class ClientTestCase(testing.AsyncTestCase):
+
+    def get_new_ioloop(self):
+        return IOLoop.instance()
+
+    def tearDown(self):
+        super(ClientTestCase, self).tearDown()
+        Database._instance = None
+
+    def test_insert_a_single_document(self):
+        """[ClientTestCase] - insert a single document with client"""
+
+        db = Database.connect(["localhost:27027", "localhost:27028"],
+            dbname='test')
+
+        document = {'_id': ObjectId(), 'name': 'shouldbename'}
+
+        db.collection_test.insert(document, callback=self.stop)
+        response, error = self.wait()
+
+        response['data'][0]['ok'].should.be.equal(1.0)
+        error.should.be.none
+
+    def test_insert_a_document_list(self):
+        """[ClientTestCase] - insert a list of document with client"""
+
+        db = Database.connect(["localhost:27027", "localhost:27028"],
+            dbname='test')
+
+        documents = [{'_id': ObjectId(), 'name': 'shouldbename'},
+            {'_id': ObjectId(), 'name': 'shouldbename2'}]
+
+        db.collection_test.insert(documents, callback=self.stop)
+        response, error = self.wait()
+
+        response['data'][0]['ok'].should.be.equal(1.0)
+        error.should.be.none
