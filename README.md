@@ -12,6 +12,10 @@
 * Signals for pre_save, post_save, pre_remove, post_remove, pre_update and post_update
 * 100% of code coverage by test
 
+## Documentation
+
+Visit our online [documentation](http://mongotor.readthedocs.org/) for more examples and cases of use
+
 ## Why not pymongo ?
 
 [PyMongo](http://api.mongodb.org/python/current/) is a recommended way to work with MongoDB in python, but isn't asynchronous and not run inside de tornado's ioloop. If you use pymongo you won't take the advantages of tornado.
