@@ -21,7 +21,7 @@ setup(
     keywords = ['mongo','tornado'],
     author = 'Marcel Nicolay',
     author_email = 'marcel.nicolay@gmail.com',
-    url = 'http://github.com/marcelnicolay/mongotor',
+    url = 'http://marcelnicolay.github.com/mongotor/',
     license = 'OSI',
     classifiers = ['Development Status :: 4 - Beta',
                    'Intended Audience :: Developers',
