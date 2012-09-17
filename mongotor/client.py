@@ -16,9 +16,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from tornado import gen
-from bson import SON
 from mongotor.node import Node, ReadPreference
-from mongotor.errors import DatabaseError
+from mongotor.cursor import Cursor
 from mongotor import message
 
 
@@ -115,3 +114,55 @@ class Client(object):
             message_update, ReadPreference.PRIMARY)
 
         callback((response, error))
+
+    @gen.engine
+    def find(self, *args, **kwargs):
+        """Query the database.
+
+        The `spec` argument is a prototype document that all results
+        must match. For example:
+
+        :Parameters:
+          - `spec` (optional): a SON object specifying elements which
+            must be present for a document to be included in the
+            result set
+          - `fields` (optional): a list of field names that should be
+            returned in the result set ("_id" will always be
+            included), or a dict specifying the fields to return
+          - `skip` (optional): the number of documents to omit (from
+            the start of the result set) when returning the results
+          - `limit` (optional): the maximum number of results to
+            return
+          - `timeout` (optional): if True, any returned cursor will be
+            subject to the normal timeout behavior of the mongod
+            process. Otherwise, the returned cursor will never timeout
+            at the server. Care should be taken to ensure that cursors
+            with timeout turned off are properly closed.
+          - `snapshot` (optional): if True, snapshot mode will be used
+            for this query. Snapshot mode assures no duplicates are
+            returned, or objects missed, which were present at both
+            the start and end of the query's execution. For details,
+            see the `snapshot documentation
+            <http://dochub.mongodb.org/core/snapshot>`_.
+          - `tailable` (optional): the result of this find call will
+            be a tailable cursor - tailable cursors aren't closed when
+            the last data is retrieved but are kept open and the
+            cursors location marks the final document's position. if
+            more data is received iteration of the cursor will
+            continue from the last document received. For details, see
+            the `tailable cursor documentation
+            <http://www.mongodb.org/display/DOCS/Tailable+Cursors>`_.
+          - `sort` (optional): a list of (key, direction) pairs
+            specifying the sort order for this query. See
+            :meth:`~pymongo.cursor.Cursor.sort` for details.
+          - `max_scan` (optional): limit the number of documents
+            examined when performing the query
+          - `read_preferences` (optional): The read preference for
+            this query.
+        """
+        callback = kwargs['callback']
+        del kwargs['callback']
+
+        cursor = Cursor(database=self._database, collection=self._collection,
+            *args, **kwargs)
+        cursor.find(callback=callback)

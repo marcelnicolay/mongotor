@@ -214,11 +214,10 @@ class Database(object):
         connection=None, callback=None):
 
         read_preference = read_preference or self._read_preference
-        from mongotor.cursor import Cursor
-        cursor = Cursor('$cmd', command, is_command=True, connection=connection,
-            read_preference=read_preference)
+        client = Client(self, '$cmd')
 
-        cursor.find(limit=-1, callback=callback)
+        client.find(command, limit=-1, is_command=True, connection=connection,
+            read_preference=read_preference, callback=callback)
 
     def __getattr__(self, name):
         """Get a client collection by name.

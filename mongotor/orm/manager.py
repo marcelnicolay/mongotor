@@ -30,8 +30,8 @@ class Manager(object):
     @gen.engine
     def find_one(self, query, callback):
 
-        cursor = Cursor(self.collection.__collection__, query)
-        result, error = yield gen.Task(cursor.find, limit=-1)
+        client = getattr(Database(), self.collection.__collection__)
+        result, error = yield gen.Task(client.find, query, limit=-1)
 
         instance = None
         if result:
@@ -41,8 +41,8 @@ class Manager(object):
 
     @gen.engine
     def find(self, query, callback, **kw):
-        cursor = Cursor(self.collection.__collection__, query)
-        result, error = yield gen.Task(cursor.find, **kw)
+        client = getattr(Database(), self.collection.__collection__)
+        result, error = yield gen.Task(client.find, query, **kw)
 
         items = []
 

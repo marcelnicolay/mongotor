@@ -40,8 +40,8 @@ class CursorTestCase(testing.AsyncTestCase):
         document = {'_id': ObjectId(), 'name': 'should be name'}
         self._insert_document(document)
 
-        cursor = Cursor('cursor_test')
-        cursor.find(limit=-1, callback=self.stop)
+        cursor = Cursor(database=Database(), collection='cursor_test', limit=-1)
+        cursor.find(callback=self.stop)
 
         result, error = self.wait()
 
@@ -61,8 +61,8 @@ class CursorTestCase(testing.AsyncTestCase):
         document3 = {'_id': ObjectId(), 'name': 'should be name 3'}
         self._insert_document(document3)
 
-        cursor = Cursor('cursor_test')
-        cursor.find(limit=2, callback=self.stop)
+        cursor = Cursor(database=Database(), collection='cursor_test', limit=2)
+        cursor.find(callback=self.stop)
 
         result, error = self.wait()
 
@@ -83,8 +83,8 @@ class CursorTestCase(testing.AsyncTestCase):
         document3 = {'_id': ObjectId(), 'name': 'should be name 3', 'flag': 1}
         self._insert_document(document3)
 
-        cursor = Cursor('cursor_test', {'flag': 1})
-        cursor.find(limit=2, callback=self.stop)
+        cursor = Cursor({'flag': 1}, database=Database(), collection='cursor_test', limit=2)
+        cursor.find(callback=self.stop)
 
         result, error = self.wait()
 
@@ -105,8 +105,9 @@ class CursorTestCase(testing.AsyncTestCase):
         document3 = {'_id': ObjectId(), 'name': 'should be name 3', 'size': 3}
         self._insert_document(document3)
 
-        cursor = Cursor('cursor_test')
-        cursor.find(limit=2, sort={'size': DESCENDING}, callback=self.stop)
+        cursor = Cursor(database=Database(), collection='cursor_test',
+            limit=2, sort={'size': DESCENDING})
+        cursor.find(callback=self.stop)
 
         result, error = self.wait()
 
@@ -127,8 +128,9 @@ class CursorTestCase(testing.AsyncTestCase):
         document3 = {'_id': ObjectId(), 'name': 'should be name 3', 'size': 3}
         self._insert_document(document3)
 
-        cursor = Cursor('cursor_test')
-        cursor.find(limit=2, sort={'size': ASCENDING}, callback=self.stop)
+        cursor = Cursor(database=Database(), collection='cursor_test',
+            limit=2, sort={'size': ASCENDING})
+        cursor.find(callback=self.stop)
 
         result, error = self.wait()
 
@@ -149,8 +151,9 @@ class CursorTestCase(testing.AsyncTestCase):
         document3 = {'_id': ObjectId(), 'name': 'should be name 3', 'size': 3}
         self._insert_document(document3)
 
-        cursor = Cursor('cursor_test', document2['_id'])
-        cursor.find(limit=-1, callback=self.stop)
+        cursor = Cursor(document2['_id'], database=Database(),
+            collection='cursor_test', limit=-1)
+        cursor.find(callback=self.stop)
 
         result, error = self.wait()
 

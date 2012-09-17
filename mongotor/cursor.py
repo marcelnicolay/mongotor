@@ -18,7 +18,6 @@
 from tornado import gen
 from bson import SON
 from mongotor import message
-from mongotor.database import Database
 from mongotor.node import ReadPreference
 
 _QUERY_OPTIONS = {
@@ -35,10 +34,10 @@ class Cursor(object):
     """A cursor / iterator over Mongo query results.
     """
 
-    def __init__(self, collection, spec_or_id=None, fields=None, snapshot=False,
+    def __init__(self, spec_or_id=None, collection=None, database=None, fields=None, snapshot=False,
         tailable=False, max_scan=None, is_command=False, explain=False, hint=None,
-        read_preference=ReadPreference.PRIMARY, timeout=True, slave_okay=True,
-        is_master=False, connection=None):
+        skip=0, limit=0, sort=None, connection=None,
+        read_preference=ReadPreference.PRIMARY, timeout=True, slave_okay=True):
 
         if spec_or_id is not None and not isinstance(spec_or_id, dict):
             spec_or_id = {"_id": spec_or_id}
@@ -49,27 +48,28 @@ class Cursor(object):
         self._tailable = tailable
         self._max_scan = max_scan
         self._hint = hint
+        self._database = database
         self._collection = collection
-        self._collection_name = Database().get_collection_name(collection)
+        self._collection_name = database.get_collection_name(collection)
         self._timeout = timeout
         self._is_command = is_command
         self._explain = explain
         self._slave_okay = slave_okay
         self._read_preference = read_preference
-        self._is_master = is_master
         self._connection = connection
+        self._ordering = sort
+        self._skip = skip
+        self._limit = limit
 
     @gen.engine
-    def find(self, skip=0, limit=0, sort=None, callback=None):
-        self._ordering = sort
-
+    def find(self, callback=None):
         message_query = message.query(self._query_options(), self._collection_name,
-            skip, limit, self._query_spec(), self._fields)
+            self._skip, self._limit, self._query_spec(), self._fields)
 
         if self._connection:
             response, error = yield gen.Task(self._connection.send_message, message_query)
         else:
-            response, error = yield gen.Task(Database().send_message, message_query,
+            response, error = yield gen.Task(self._database.send_message, message_query,
                 read_preference=self._read_preference)
 
         # close cursor
@@ -79,13 +79,13 @@ class Cursor(object):
             if self._connection:
                 self._connection.send_message(message.kill_cursors([cursor_id]), callback=None)
             else:
-                Database().send_message(message.kill_cursors([cursor_id]),
+                self._database.send_message(message.kill_cursors([cursor_id]),
                     callback=None)
 
         if error:
             callback((None, error))
         else:
-            if limit == -1 and len(response['data']) == 1:
+            if self._limit == -1 and len(response['data']) == 1:
                 callback((response['data'][0], None))
             else:
                 callback((response['data'], None))
