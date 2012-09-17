@@ -63,8 +63,8 @@ class Node(object):
                 .format(host=self.host, port=self.port, error=ie))
 
         if response:
-            self.is_primary = response['ismaster']
-            self.is_secondary = response['secondary']
+            self.is_primary = response.get('ismaster', True)
+            self.is_secondary = response.get('secondary', False)
             self.available = True
         else:
             self.available = False
