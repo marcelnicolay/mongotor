@@ -17,9 +17,8 @@
 
 from bson.son import SON
 from tornado import gen
-from mongotor import message
 from mongotor.database import Database
-from mongotor.cursor import Cursor
+from mongotor.client import Client
 
 
 class Manager(object):
@@ -29,9 +28,8 @@ class Manager(object):
 
     @gen.engine
     def find_one(self, query, callback):
-
-        client = getattr(Database(), self.collection.__collection__)
-        result, error = yield gen.Task(client.find, query, limit=-1)
+        client = Client(Database(), self.collection.__collection__)
+        result, error = yield gen.Task(client.find_one, query)
 
         instance = None
         if result:
@@ -41,7 +39,7 @@ class Manager(object):
 
     @gen.engine
     def find(self, query, callback, **kw):
-        client = getattr(Database(), self.collection.__collection__)
+        client = Client(Database(), self.collection.__collection__)
         result, error = yield gen.Task(client.find, query, **kw)
 
         items = []
@@ -162,10 +160,8 @@ class Manager(object):
 
     @gen.engine
     def truncate(self, callback=None):
-        collection_name = Database().get_collection_name(self.collection.__collection__)
-        message_delete = message.delete(collection_name, {}, True, {})
-
-        yield gen.Task(Database().send_message, message_delete)
+        client = Client(Database(), self.collection.__collection__)
+        yield gen.Task(client.remove, {})
 
         if callback:
             callback()
