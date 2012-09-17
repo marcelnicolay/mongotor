@@ -1,2 +1,2 @@
-pymongo==2.3
-tornado==2.3
+pymongo>=2.3
+tornado>=2.2
