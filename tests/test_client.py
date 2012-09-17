@@ -13,6 +13,7 @@ class ClientTestCase(testing.AsyncTestCase):
 
     def tearDown(self):
         super(ClientTestCase, self).tearDown()
+        Database().collection_test.remove({})
         Database._instance = None
 
     def test_insert_a_single_document(self):
@@ -94,4 +95,23 @@ class ClientTestCase(testing.AsyncTestCase):
         response, error = self.wait()
 
         response['data'][0]['ok'].should.be.equal(1.0)
+        error.should.be.none
+
+    def test_find_document(self):
+        """[ClientTestCase] - find a document"""
+        db = Database.connect(["localhost:27027", "localhost:27028"],
+            dbname='test')
+
+        documents = [{'_id': ObjectId(), 'someflag': 1},
+            {'_id': ObjectId(), 'someflag': 1},
+            {'_id': ObjectId(), 'someflag': 2}]
+
+        db.collection_test.insert(documents, callback=self.stop)
+        response, error = self.wait()
+
+        db.collection_test.find({'someflag': 1}, callback=self.stop)
+        response, error = self.wait()
+
+        response[0]['_id'].should.be(documents[0]['_id'])
+        response[1]['_id'].should.be(documents[1]['_id'])
         error.should.be.none
