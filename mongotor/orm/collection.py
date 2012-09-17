@@ -52,7 +52,18 @@ class CollectionMetaClass(type):
 
 
 class Collection(object):
-    """Collection class
+    """Collection is the base class
+
+    This class map a mongo collection into a python class.
+    You only need to write a class and starts to use the orm advantages.
+
+    For example, a simple users collection can be mapping
+    using:
+
+    >>> from mongotor.orm import collection, field
+    >>> class Users(collection.Collection):
+    >>>     __collection__ = 'users'
+    >>>     name = field.StringField()
     """
     __metaclass__ = CollectionMetaClass
 
@@ -77,6 +88,14 @@ class Collection(object):
 
     @classmethod
     def create(cls, dictionary):
+        """Create a new instance of collection from a dictionary
+
+        For example, creating a new instance from a mapped collection
+        Users:
+
+        >>> user = Users.create({'name': 'should be name'})
+        >>> assert user.name == 'should be name'
+        """
         instance = cls()
         for (key, value) in dictionary.items():
             try:
@@ -89,6 +108,10 @@ class Collection(object):
     @gen.engine
     def save(self, safe=True, callback=None):
         """Save a document
+
+        >>> user = Users()
+        >>> user.name = 'should be name'
+        >>> user.save()
 
         :Parameters:
         - `safe` (optional): safe insert operation 

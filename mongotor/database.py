@@ -131,6 +131,11 @@ class Database(object):
 
     @classmethod
     def disconnect(cls):
+        """Disconnect to database
+
+        >>> Database.disconnect()
+
+        """
         if not cls._instance or not hasattr(cls._instance, '_initialized'):
             raise ValueError("Database isn't connected")
 
@@ -200,7 +205,6 @@ class Database(object):
           - `**kwargs` (optional): additional keyword arguments will
             be added to the command document before it is sent
 
-        .. mongodoc:: commands
         """
         if isinstance(command, basestring):
             command = SON([(command, value)])
