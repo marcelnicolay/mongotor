@@ -115,3 +115,41 @@ class ClientTestCase(testing.AsyncTestCase):
         response[0]['_id'].should.be(documents[0]['_id'])
         response[1]['_id'].should.be(documents[1]['_id'])
         error.should.be.none
+
+    def test_find_one_document(self):
+        """[ClientTestCase] - find one document"""
+        db = Database.connect(["localhost:27027", "localhost:27028"],
+            dbname='test')
+
+        documents = [{'_id': ObjectId(), 'param': 'shouldbeparam'},
+            {'_id': ObjectId(), 'param': 'shouldbeparam1'},
+            {'_id': ObjectId(), 'param': 'shouldbeparam2'}]
+
+        db.collection_test.insert(documents, callback=self.stop)
+        response, error = self.wait()
+
+        db.collection_test.find_one({'param': 'shouldbeparam1'},
+            callback=self.stop)
+        response, error = self.wait()
+
+        response['_id'].should.be(documents[1]['_id'])
+        error.should.be.none
+
+    def test_find_one_document_by_id(self):
+        """[ClientTestCase] - find one document by id"""
+        db = Database.connect(["localhost:27027", "localhost:27028"],
+            dbname='test')
+
+        documents = [{'_id': ObjectId(), 'param': 'shouldbeparam'},
+            {'_id': ObjectId(), 'param': 'shouldbeparam1'},
+            {'_id': ObjectId(), 'param': 'shouldbeparam2'}]
+
+        db.collection_test.insert(documents, callback=self.stop)
+        response, error = self.wait()
+
+        db.collection_test.find_one(documents[2]['_id'],
+            callback=self.stop)
+        response, error = self.wait()
+
+        response['_id'].should.be(documents[2]['_id'])
+        error.should.be.none

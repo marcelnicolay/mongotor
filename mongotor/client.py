@@ -116,6 +116,32 @@ class Client(object):
         callback((response, error))
 
     @gen.engine
+    def find_one(self, spec_or_id=None, **kwargs):
+        """Get a single document from the database.
+
+        All arguments to :meth:`find` are also valid arguments for
+        :meth:`find_one`, although any `limit` argument will be
+        ignored. Returns a single document, or ``None`` if no matching
+        document is found.
+
+        :Parameters:
+
+          - `spec_or_id` (optional): a dictionary specifying
+            the query to be performed OR any other type to be used as
+            the value for a query for ``"_id"``.
+
+          - `*args` (optional): any additional positional arguments
+            are the same as the arguments to :meth:`find`.
+
+          - `**kwargs` (optional): any additional keyword arguments
+            are the same as the arguments to :meth:`find`.
+        """
+        if spec_or_id is not None and not isinstance(spec_or_id, dict):
+            spec_or_id = {"_id": spec_or_id}
+
+        self.find(spec_or_id, limit=-1, **kwargs)
+
+    @gen.engine
     def find(self, *args, **kwargs):
         """Query the database.
 

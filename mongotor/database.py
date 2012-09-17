@@ -216,7 +216,7 @@ class Database(object):
         read_preference = read_preference or self._read_preference
         client = Client(self, '$cmd')
 
-        client.find(command, limit=-1, is_command=True, connection=connection,
+        client.find_one(command, is_command=True, connection=connection,
             read_preference=read_preference, callback=callback)
 
     def __getattr__(self, name):
