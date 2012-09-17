@@ -1,0 +1,185 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>collection – Map a mongo collection into a python class &mdash; MongoTor 0.0.1 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="MongoTor 0.0.1 documentation" href="../index.html" />
+    <link rel="up" title="API Reference" href="index.html" />
+    <link rel="prev" title="database – Database level operations" href="database.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="database.html" title="database – Database level operations"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">MongoTor 0.0.1 documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">API Reference</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="collection-map-a-mongo-collection-into-a-python-class">
+<h1><tt class="xref py py-mod docutils literal"><span class="pre">collection</span></tt> &#8211; Map a mongo collection into a python class<a class="headerlink" href="#collection-map-a-mongo-collection-into-a-python-class" title="Permalink to this headline">¶</a></h1>
+<span class="target" id="module-mongotor.orm.collection"></span><dl class="class">
+<dt id="mongotor.orm.collection.Collection">
+<em class="property">class </em><tt class="descclassname">mongotor.orm.collection.</tt><tt class="descname">Collection</tt><a class="headerlink" href="#mongotor.orm.collection.Collection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Collection is the base class</p>
+<p>This class map a mongo collection into a python class.
+You only need to write a class and starts to use the orm advantages.</p>
+<p>For example, a simple users collection can be mapping
+using:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">mongotor.orm</span> <span class="kn">import</span> <span class="n">collection</span><span class="p">,</span> <span class="n">field</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">class</span> <span class="nc">Users</span><span class="p">(</span><span class="n">collection</span><span class="o">.</span><span class="n">Collection</span><span class="p">):</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="n">__collection__</span> <span class="o">=</span> <span class="s">&#39;users&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="n">name</span> <span class="o">=</span> <span class="n">field</span><span class="o">.</span><span class="n">StringField</span><span class="p">()</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="mongotor.orm.collection.Collection.save">
+<tt class="descname">save</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#mongotor.orm.collection.Collection.save" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save a document</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">user</span> <span class="o">=</span> <span class="n">Users</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">user</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s">&#39;should be name&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">user</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+</pre></div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters :</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><cite>safe</cite> (optional): safe insert operation</li>
+<li><cite>callback</cite> : method which will be called when save is finished</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="mongotor.orm.collection.Collection.remove">
+<tt class="descname">remove</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#mongotor.orm.collection.Collection.remove" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove a document</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters :</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><cite>safe</cite> (optional): safe remove operation</li>
+<li><cite>callback</cite> : method which will be called when remove is finished</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="mongotor.orm.collection.Collection.update">
+<tt class="descname">update</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#mongotor.orm.collection.Collection.update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update a document</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters :</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><cite>safe</cite> (optional): safe update operation</li>
+<li><cite>callback</cite> : method which will be called when update is finished</li>
+</ul>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="database.html"
+                        title="previous chapter"><tt class="docutils literal"><span class="pre">database</span></tt> &#8211; Database level operations</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/api/collection.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="database.html" title="database – Database level operations"
+             >previous</a> |</li>
+        <li><a href="../index.html">MongoTor 0.0.1 documentation</a> &raquo;</li>
+          <li><a href="index.html" >API Reference</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Marcel Nicolay.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

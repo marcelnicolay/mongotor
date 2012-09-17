@@ -1,0 +1,193 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>database – Database level operations &mdash; MongoTor 0.0.1 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="MongoTor 0.0.1 documentation" href="../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">MongoTor 0.0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-mongotor.database">
+<span id="database-database-level-operations"></span><h1><tt class="xref py py-mod docutils literal"><span class="pre">database</span></tt> &#8211; Database level operations<a class="headerlink" href="#module-mongotor.database" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="mongotor.database.Database">
+<em class="property">class </em><tt class="descclassname">mongotor.database.</tt><tt class="descname">Database</tt><a class="headerlink" href="#mongotor.database.Database" title="Permalink to this definition">¶</a></dt>
+<dd><p>Database object</p>
+<dl class="classmethod">
+<dt id="mongotor.database.Database.connect">
+<em class="property">classmethod </em><tt class="descname">connect</tt><big>(</big><em>addresses</em>, <em>dbname</em>, <em>read_preference=None</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#mongotor.database.Database.connect" title="Permalink to this definition">¶</a></dt>
+<dd><p>Connect to database</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">Database</span><span class="o">.</span><span class="n">connect</span><span class="p">([</span><span class="s">&#39;localhost:27017&#39;</span><span class="p">,</span> <span class="s">&#39;localhost:27018&#39;</span><span class="p">],</span> <span class="s">&#39;test&#39;</span><span class="p">,</span> <span class="n">maxconnections</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">db</span> <span class="o">=</span> <span class="n">Database</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">db</span><span class="o">.</span><span class="n">collection</span><span class="o">.</span><span class="n">insert</span><span class="p">({</span><span class="o">...</span><span class="p">},</span> <span class="n">callback</span><span class="o">=...</span><span class="p">)</span>
+</pre></div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters :</th><td class="field-body"><ul class="first last simple">
+<li><cite>addresses</cite> : addresses can be a list or a simple string, host:port</li>
+<li><cite>dbname</cite> : mongo database name</li>
+<li><cite>maxconnections</cite> (optional): maximum open connections for pool. 0 for unlimited</li>
+<li><cite>maxusage</cite> (optional): number of requests allowed on a connection before it is closed. 0 for unlimited</li>
+<li><cite>autoreconnect</cite>: autoreconnect to database. default is True</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="mongotor.database.Database.disconnect">
+<em class="property">classmethod </em><tt class="descname">disconnect</tt><big>(</big><big>)</big><a class="headerlink" href="#mongotor.database.Database.disconnect" title="Permalink to this definition">¶</a></dt>
+<dd><p>Disconnect to database</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">Database</span><span class="o">.</span><span class="n">disconnect</span><span class="p">()</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="mongotor.database.Database.command">
+<tt class="descname">command</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#mongotor.database.Database.command" title="Permalink to this definition">¶</a></dt>
+<dd><p>Issue a MongoDB command.</p>
+<p>Send command <cite>command</cite> to the database and return the
+response. If <cite>command</cite> is an instance of <tt class="xref py py-class docutils literal"><span class="pre">basestring</span></tt>
+then the command {<cite>command</cite>: <cite>value</cite>} will be sent. Otherwise,
+<cite>command</cite> must be an instance of <tt class="xref py py-class docutils literal"><span class="pre">dict</span></tt> and will be
+sent as is.</p>
+<p>Any additional keyword arguments will be added to the final
+command document before it is sent.</p>
+<p>For example, a command like <tt class="docutils literal"><span class="pre">{buildinfo:</span> <span class="pre">1}</span></tt> can be sent
+using:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">db</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="s">&quot;buildinfo&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>For a command where the value matters, like <tt class="docutils literal"><span class="pre">{collstats:</span>
+<span class="pre">collection_name}</span></tt> we can do:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">db</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="s">&quot;collstats&quot;</span><span class="p">,</span> <span class="n">collection_name</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>For commands that take additional arguments we can use
+kwargs. So <tt class="docutils literal"><span class="pre">{filemd5:</span> <span class="pre">object_id,</span> <span class="pre">root:</span> <span class="pre">file_root}</span></tt> becomes:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">db</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="s">&quot;filemd5&quot;</span><span class="p">,</span> <span class="n">object_id</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="n">file_root</span><span class="p">)</span>
+</pre></div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters :</th><td class="field-body"><ul class="first last">
+<li><p class="first"><cite>command</cite>: document representing the command to be issued,
+or the name of the command (for simple commands only).</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">the order of keys in the <cite>command</cite> document is
+significant (the &#8220;verb&#8221; must come first), so commands
+which require multiple keys (e.g. <cite>findandmodify</cite>)
+should use an instance of <tt class="xref py py-class docutils literal"><span class="pre">SON</span></tt> or
+a string and kwargs instead of a Python <cite>dict</cite>.</p>
+</div>
+</li>
+<li><p class="first"><cite>value</cite> (optional): value to use for the command verb when
+<cite>command</cite> is passed as a string</p>
+</li>
+<li><p class="first"><cite>**kwargs</cite> (optional): additional keyword arguments will
+be added to the command document before it is sent</p>
+</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/api/database.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">MongoTor 0.0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Marcel Nicolay.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>
