@@ -28,7 +28,7 @@ I am very thankful to asyncmongo, i worked with he in some projects and he's bee
 
     pip install mongotor
 
-## Using
+## Using ORM
 
     from mongotor.orm import Collection
     from mongotor.orm.field import StringField, ObjectIdField, BooleanField, DateTimeField
@@ -83,6 +83,29 @@ I am very thankful to asyncmongo, i worked with he in some projects and he's bee
 
             # remove object
             yield gen.Task(user_found.remove)
+
+## Using Client
+
+    from mongotor.database import Database
+    from bson import ObjectId
+
+    class Handler(tornado.web.RequestHandler):
+
+        def initialize(self):
+            self.db = Database.connect(['localhost:27017','localhost:27018'], 'asyncmongo_test')
+
+        @tornado.web.asynchronous
+        @gen.engine
+        def get(self):
+            user = {'_id': ObjectId, 'name': 'User Name'}
+            yield gen.Task(self.db.user.insert, user)
+            
+            yield gen.Task(self.db.user.update, user['_id'], {"$set": {'name': 'New User Name'}})
+
+            user_found = yield gen.Task(self.db.user.find_one, user['_id'])
+            assert user_found['name'] == 'New User Name'
+
+            yield gen.Task(self.db.user.remove, user['_id'])
 
 ## Contributing
 
