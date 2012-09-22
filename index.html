@@ -95,7 +95,8 @@ class Handler(tornado.web.RequestHandler):
     def initialize(self):
         # configuring an replica set
         self.db = db = Database.connect(["localhost:27027", "localhost:27028"], 
-            dbname='mongotor_test', read_preference=ReadPreference.SECONDARY_PREFERRED)
+            dbname='mongotor_test', 
+            read_preference=ReadPreference.SECONDARY_PREFERRED)
 
     @tornado.web.asynchronous
     @gen.engine
