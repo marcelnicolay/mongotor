@@ -30,8 +30,9 @@ I am very thankful to asyncmongo, i worked with he in some projects and he's bee
 
 ## Installing
 
-    pip install mongotor
-
+```bash
+$pip install mongotor
+```
 
 ## Simple usage
 
@@ -47,7 +48,7 @@ class Handler(tornado.web.RequestHandler):
     @tornado.web.asynchronous
     @gen.engine
     def get(self):
-        user = {'_id': ObjectId, 'name': 'User Name'}
+        user = {'_id': ObjectId(), 'name': 'User Name'}
         yield gen.Task(self.db.user.insert, user)
         
         yield gen.Task(self.db.user.update, user['_id'], {"$set": {'name': 'New User Name'}})
@@ -90,7 +91,7 @@ class Handler(tornado.web.RequestHandler):
         assert user_found == user
 ```
 
-## More complex example, using ORM
+## Using ORM
 
 ```python
 from mongotor.orm import Collection
