@@ -1,7 +1,9 @@
 # coding: utf-8
 from tornado.ioloop import IOLoop
 from tornado import testing
+from bson import ObjectId
 from mongotor.database import Database
+from mongotor.client import Client
 from mongotor.node import ReadPreference
 import sure
 import os
@@ -33,3 +35,29 @@ class ReplicaSetTestCase(testing.AsyncTestCase):
 
         nodes = Database()._nodes
         nodes.should.have.length_of(2)
+
+
+class SecondaryPreferredTestCase(testing.AsyncTestCase):
+
+    def get_new_ioloop(self):
+        return IOLoop.instance()
+
+    def tearDown(self):
+        super(SecondaryPreferredTestCase, self).tearDown()
+        Database._instance = None
+
+    def test_find_on_secondary(self):
+        """[SecondaryPreferredTestCase] - test find document from secondary"""
+        Database.connect(["localhost:27027", "localhost:27028"], dbname='test',
+            read_preference=ReadPreference.SECONDARY_PREFERRED)
+
+        client = Client(Database(), 'test')
+
+        doc = {'_id': ObjectId()}
+        client.insert(doc, callback=self.stop)
+        self.wait()
+
+        client.find_one(doc, callback=self.stop)
+        doc_found, error = self.wait()
+
+        doc_found.should.be.eql(doc)

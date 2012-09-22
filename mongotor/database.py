@@ -117,8 +117,11 @@ class Database(object):
         :Parameters:
           - `addresses` : addresses can be a list or a simple string, host:port
           - `dbname` : mongo database name
+          - `read_preference` (optional): The read preference for
+            this query.
           - `maxconnections` (optional): maximum open connections for pool. 0 for unlimited
-          - `maxusage` (optional): number of requests allowed on a connection before it is closed. 0 for unlimited
+          - `maxusage` (optional): number of requests allowed on a connection
+            before it is closed. 0 for unlimited
           - `autoreconnect`: autoreconnect to database. default is True
         """
         if cls._instance and hasattr(cls._instance, '_initialized'):
@@ -146,10 +149,10 @@ class Database(object):
 
     @gen.engine
     @connected
-    def send_message(self, message, read_preference=None,
-        callback=None):
+    def send_message(self, message, read_preference=None, callback=None):
+        if read_preference is None:
+            read_preference = self._read_preference
 
-        read_preference = read_preference or self._read_preference
         node = ReadPreference.select_node(self._nodes, read_preference)
         if not node:
             raise DatabaseError('could not find an available node')
@@ -211,7 +214,9 @@ class Database(object):
 
         command.update(kwargs)
 
-        read_preference = read_preference or self._read_preference
+        if read_preference is None:
+            read_preference = self._read_preference
+
         self._command(command, read_preference=read_preference, callback=callback)
 
     def _command(self, command, read_preference=None,

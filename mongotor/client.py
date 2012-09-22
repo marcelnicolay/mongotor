@@ -50,7 +50,7 @@ class Client(object):
             check_keys, safe, {})
 
         response, error = yield gen.Task(self._database.send_message,
-            message_insert, ReadPreference.PRIMARY)
+            message_insert, read_preference=ReadPreference.PRIMARY)
 
         if callback:
             callback((response, error))
@@ -73,7 +73,7 @@ class Client(object):
             safe, {})
 
         response, error = yield gen.Task(self._database.send_message,
-            message_delete, ReadPreference.PRIMARY)
+            message_delete, read_preference=ReadPreference.PRIMARY)
 
         if callback:
             callback((response, error))
@@ -109,7 +109,7 @@ class Client(object):
                 multi, spec, document, safe, {})
 
         response, error = yield gen.Task(self._database.send_message,
-            message_update, ReadPreference.PRIMARY)
+            message_update, read_preference=ReadPreference.PRIMARY)
 
         callback((response, error))
 
@@ -127,9 +127,6 @@ class Client(object):
           - `spec_or_id` (optional): a dictionary specifying
             the query to be performed OR any other type to be used as
             the value for a query for ``"_id"``.
-
-          - `*args` (optional): any additional positional arguments
-            are the same as the arguments to :meth:`find`.
 
           - `**kwargs` (optional): any additional keyword arguments
             are the same as the arguments to :meth:`find`.

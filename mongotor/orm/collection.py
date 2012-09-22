@@ -17,7 +17,6 @@
 
 import logging
 from tornado import gen
-from mongotor import message
 from mongotor.client import Client
 from mongotor.orm.field import Field
 from mongotor.orm.signal import (pre_save, post_save,

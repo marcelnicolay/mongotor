@@ -37,7 +37,7 @@ class Cursor(object):
     def __init__(self, spec_or_id=None, collection=None, database=None, fields=None, snapshot=False,
         tailable=False, max_scan=None, is_command=False, explain=False, hint=None,
         skip=0, limit=0, sort=None, connection=None,
-        read_preference=ReadPreference.PRIMARY, timeout=True, slave_okay=True):
+        read_preference=None, timeout=True, slave_okay=True):
 
         if spec_or_id is not None and not isinstance(spec_or_id, dict):
             spec_or_id = {"_id": spec_or_id}
