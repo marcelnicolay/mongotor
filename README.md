@@ -14,7 +14,7 @@
 
 ## Documentation
 
-Visit our online [documentation](http://mongotor.readthedocs.org/) for more examples and cases of use
+Visit our online [documentation](http://mongotor.readthedocs.org/) for more examples
 
 ## Why not pymongo ?
 
@@ -22,11 +22,11 @@ Visit our online [documentation](http://mongotor.readthedocs.org/) for more exam
 
 ## Why not asyncmongo ?
 
-[AsyncMongo](https://github.com/bitly/asyncmongo) is asynchronous library for accessing mongo with tornado.ioloop, but don't implement replica set, don't have an ORM, I don't like her connection pooling, is deficitary, and i don't trust in your tests. 
+[AsyncMongo](https://github.com/bitly/asyncmongo) is an asynchronous library for accessing mongo with tornado.ioloop, but don't implement replica set, don't have an ORM, I don't like her connection poolin, and i don't trust in your tests. 
 
 Besides, this project is not walking very well, or better, very fast. Exist a lot of issues and pull requests that aren't looked.
 
-I am very thankful to asyncmongo, i worked with he in some projects and he's been served as inspiration, but now, I am very excited to write my own library, more flexible, fast, secure and that will walking faster.
+I am very thankful to asyncmongo, i worked with it in some projects and it's been served as inspiration, but now, I am very excited to write my own library, more flexible, fast, secure and that will walking faster.
 
 ## Installing
 
