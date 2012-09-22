@@ -1,15 +1,15 @@
 # What is MongoTor ?
 
-(MONGO + TORnado) is an asynchronous toolkit for accessing mongo with tornado.
+(MONGOdb + TORnado) is an asynchronous toolkit for accessing ``MongoDB`` with ``Tornado``.
 
 ## Features
 
-* ORM like to map documents and fields
-* Advanced connection management (replica sets, slave okay)
-* Automatic reconnection
-* Connection pooling
-* Support for running database commands (find, find_one, count, sum, mapreduce etc...)
-* Signals for pre_save, post_save, pre_remove, post_remove, pre_update and post_update
+* ``ORM`` like to map documents and fields
+* Advanced connection management (``replica sets``, slave okay)
+* Automatic ``reconnection``
+* Connection ``pooling``
+* Support for running database commands (``find``, ``find_one``, ``count``, ``sum``, ``mapreduce`` etc...)
+* ``Signals`` for pre_save, post_save, pre_remove, post_remove, pre_update and post_update
 * 100% of code coverage by test
 
 ## Documentation
@@ -153,7 +153,26 @@ class Handler(tornado.web.RequestHandler):
 
 ## Contributing
 
-Send a pull request (preferred) or patches using ``git format-patch``. Please, write unit and/or functional tests for your new feature.
+Write tests for your new feature and send a pull request.
+
+For run mongotor tests install mongodb and do:
+
+```bash
+# create a new virtualenv
+mkvirtualenv mongotor
+
+# install dev requirements
+pip install -r requirements-dev.txt
+
+# start mongo
+make mongo-start
+
+# configure replicaset
+make mongo-config
+
+# run tests
+make test
+```
 
 ## Issues
 
