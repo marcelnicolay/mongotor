@@ -69,7 +69,7 @@ class Database(object):
             if self._initialized:
                 break
 
-        IOLoop.instance().add_timeout(timedelta(seconds=10), self._config_nodes)
+        IOLoop.instance().add_timeout(timedelta(seconds=5), self._config_nodes)
 
     def _on_config_node(self, ioloop_is_running):
         for node in self._nodes:
