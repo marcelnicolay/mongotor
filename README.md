@@ -37,6 +37,8 @@ pip install mongotor
 ## Simple usage
 
 ```python
+import tornado.web
+from tornado import gen
 from mongotor.database import Database
 from bson import ObjectId
 
@@ -62,6 +64,8 @@ class Handler(tornado.web.RequestHandler):
 ## Support to ReplicaSet
 
 ```python
+import tornado.web
+from tornado import gen
 from mongotor.database import Database
 from mongotor.node import ReadPreference
 from bson import ObjectId
