@@ -31,7 +31,7 @@ I am very thankful to asyncmongo, i worked with he in some projects and he's bee
 ## Installing
 
 ```bash
-$pip install mongotor
+pip install mongotor
 ```
 
 ## Simple usage
@@ -43,7 +43,7 @@ from bson import ObjectId
 class Handler(tornado.web.RequestHandler):
 
     def initialize(self):
-        self.db = Database.connect(['localhost:27017','localhost:27018'], 'test')
+        self.db = Database.connect('localhost:27017', 'mongotor_test')
 
     @tornado.web.asynchronous
     @gen.engine
@@ -72,7 +72,7 @@ class Handler(tornado.web.RequestHandler):
 
     def initialize(self):
         # configuring an replica set
-        self.db = db = Database.connect(["localhost:27027", "localhost:27028"], dbname='test',
+        self.db = db = Database.connect(["localhost:27027", "localhost:27028"], dbname='mongotor_test',
             read_preference=ReadPreference.SECONDARY_PREFERRED)
 
     @tornado.web.asynchronous
@@ -104,7 +104,7 @@ from tornado import gen
 
 # A connection to the MongoDB database needs to be established before perform operations
 # A connection is stabilished using a Databse object
-Database.connect(['localhost:27017','localhost:27018'], 'asyncmongo_test')
+Database.connect(['localhost:27017','localhost:27018'], 'mongotor_test')
 
 class User(Collection):
 
