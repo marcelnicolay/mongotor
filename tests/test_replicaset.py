@@ -65,17 +65,15 @@ class SecondaryPreferredTestCase(testing.AsyncTestCase):
 
     def test_find_on_secondary(self):
         """[SecondaryPreferredTestCase] - test find document from secondary"""
-        Database.connect(["localhost:27027", "localhost:27028"], dbname='test',
+        db = Database.connect(["localhost:27027", "localhost:27028"], dbname='test',
             read_preference=ReadPreference.SECONDARY_PREFERRED)
 
-        client = Client(Database(), 'test')
-
         doc = {'_id': ObjectId()}
-        client.insert(doc, callback=self.stop)
+        db.test.insert(doc, callback=self.stop)
         self.wait()
 
         time.sleep(2)
-        client.find_one(doc, callback=self.stop)
+        db.test.find_one(doc, callback=self.stop)
         doc_found, error = self.wait()
 
         doc_found.should.be.eql(doc)

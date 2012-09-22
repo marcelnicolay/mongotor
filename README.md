@@ -32,84 +32,121 @@ I am very thankful to asyncmongo, i worked with he in some projects and he's bee
 
     pip install mongotor
 
-## Using ORM
 
-    from mongotor.orm import Collection
-    from mongotor.orm.field import StringField, ObjectIdField, BooleanField, DateTimeField
-    from mongotor.database import Database
+## Simple usage
 
-    from datetime import datetime
-    import tornado.web
-    from tornado import gen
+```python
+from mongotor.database import Database
+from bson import ObjectId
 
-    # A connection to the MongoDB database needs to be established before perform operations
-    # A connection is stabilished using a Databse object
-    Database.connect(['localhost:27017','localhost:27018'], 'asyncmongo_test')
-    
-    class User(Collection):
+class Handler(tornado.web.RequestHandler):
 
-        __collection__ = "user"
+    def initialize(self):
+        self.db = Database.connect(['localhost:27017','localhost:27018'], 'test')
 
-        _id = ObjectIdField()
-        name = StringField()
-        active = BooleanField()
-        created = DateTimeField()
+    @tornado.web.asynchronous
+    @gen.engine
+    def get(self):
+        user = {'_id': ObjectId, 'name': 'User Name'}
+        yield gen.Task(self.db.user.insert, user)
+        
+        yield gen.Task(self.db.user.update, user['_id'], {"$set": {'name': 'New User Name'}})
 
-    class Handler(tornado.web.RequestHandler):
+        user_found = yield gen.Task(self.db.user.find_one, user['_id'])
+        assert user_found['name'] == 'New User Name'
 
-        @tornado.web.asynchronous
-        @gen.engine
-        def get(self):
-            user = User()
-            user.name = "User name"
-            user.active = True
-            user.created = datetime.now()
+        yield gen.Task(self.db.user.remove, user['_id'])
+```
 
-            yield gen.Task(user.save)
+## Support to ReplicaSet
 
-            # update date
-            user.name = "New name"
-            yield gen.Task(user.update)
+```python
+from mongotor.database import Database
+from mongotor.node import ReadPreference
+from bson import ObjectId
+import time
 
-            # find one object
-            user_found = yield gen.Task(User.objects.find_one, user._id)
 
-            # find many objects
-            new_user = User()
-            new_user.name = "new user name"
-            new_user.user.active = True
-            new_user.created = datetime.now()
+class Handler(tornado.web.RequestHandler):
 
-            users_actives = yield gen.Task(User.objects.find, {'active': True})
+    def initialize(self):
+        # configuring an replica set
+        self.db = db = Database.connect(["localhost:27027", "localhost:27028"], dbname='test',
+            read_preference=ReadPreference.SECONDARY_PREFERRED)
 
-            users_actives[0].active = False
-            yield gen.Task(users_actives[0].save)
+    @tornado.web.asynchronous
+    @gen.engine
+    def get(self):
+        user = {'_id': ObjectId()}
+        
+        # write on primary
+        yield gen.Task(self.db.user.insert, user)
+        
+        # wait for replication
+        time.sleep(2)
 
-            # remove object
+        # read from secondary
+        user_found = yield gen.Task(self.db.user.find_one, user['_id'])
+        assert user_found == user
+```
+
+## More complex example, using ORM
+
+```python
+from mongotor.orm import Collection
+from mongotor.orm.field import StringField, ObjectIdField, BooleanField, DateTimeField
+from mongotor.database import Database
+
+from datetime import datetime
+import tornado.web
+from tornado import gen
+
+# A connection to the MongoDB database needs to be established before perform operations
+# A connection is stabilished using a Databse object
+Database.connect(['localhost:27017','localhost:27018'], 'asyncmongo_test')
+
+class User(Collection):
+
+    __collection__ = "user"
+
+    _id = ObjectIdField()
+    name = StringField()
+    active = BooleanField()
+    created = DateTimeField()
+
+class Handler(tornado.web.RequestHandler):
+
+    @tornado.web.asynchronous
+    @gen.engine
+    def get(self):
+        user = User()
+        user.name = "User name"
+        user.active = True
+        user.created = datetime.now()
+
+        yield gen.Task(user.save)
+
+        # update date
+        user.name = "New name"
+        yield gen.Task(user.update)
+
+        # find one object
+        user_found = yield gen.Task(User.objects.find_one, user._id)
+
+        # find many objects
+        new_user = User()
+        new_user.name = "new user name"
+        new_user.user.active = True
+        new_user.created = datetime.now()
+
+        users_actives = yield gen.Task(User.objects.find, {'active': True})
+
+        users_actives[0].active = False
+        yield gen.Task(users_actives[0].save)
+
+        # remove object
             yield gen.Task(user_found.remove)
-
-## Using Client
-
-    from mongotor.database import Database
-    from bson import ObjectId
-
-    class Handler(tornado.web.RequestHandler):
-
-        def initialize(self):
-            self.db = Database.connect(['localhost:27017','localhost:27018'], 'asyncmongo_test')
-
-        @tornado.web.asynchronous
-        @gen.engine
-        def get(self):
-            user = {'_id': ObjectId, 'name': 'User Name'}
-            yield gen.Task(self.db.user.insert, user)
-            
-            yield gen.Task(self.db.user.update, user['_id'], {"$set": {'name': 'New User Name'}})
-
-            user_found = yield gen.Task(self.db.user.find_one, user['_id'])
-            assert user_found['name'] == 'New User Name'
-
-            yield gen.Task(self.db.user.remove, user['_id'])
+```
 
 ## Contributing
 
