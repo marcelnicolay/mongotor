@@ -35,8 +35,6 @@ class Client(object):
         :Parameters:
           - `doc_or_docs`: a document or list of documents to be
             inserted
-          - `manipulate` (optional): manipulate the documents before
-            inserting?
           - `safe` (optional): check that the insert succeeded?
           - `check_keys` (optional): check if keys start with '$' or
             contain '.', raising :class:`~pymongo.errors.InvalidName`
@@ -81,8 +79,8 @@ class Client(object):
             callback((response, error))
 
     @gen.engine
-    def update(self, spec, document, upsert=False, manipulate=False,
-        safe=True, multi=False, callback=None):
+    def update(self, spec, document, upsert=False, safe=True,
+        multi=False, callback=None):
         """Update a document(s) in this collection.
 
         :Parameters:

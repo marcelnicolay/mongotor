@@ -18,6 +18,7 @@
 import logging
 from tornado import gen
 from mongotor import message
+from mongotor.client import Client
 from mongotor.orm.field import Field
 from mongotor.orm.signal import (pre_save, post_save,
     pre_remove, post_remove, pre_update, post_update)
@@ -106,7 +107,7 @@ class Collection(object):
         return instance
 
     @gen.engine
-    def save(self, safe=True, callback=None):
+    def save(self, safe=True, check_keys=True, callback=None):
         """Save a document
 
         >>> user = Users()
@@ -114,18 +115,17 @@ class Collection(object):
         >>> user.save()
 
         :Parameters:
-        - `safe` (optional): safe insert operation 
+          - `safe` (optional): safe insert operation
+          - `check_keys` (optional): check if keys start with '$' or
+            contain '.', raising :class:`~pymongo.errors.InvalidName`
+            in either case
         - `callback` : method which will be called when save is finished
         """
         pre_save.send(instance=self)
 
-        database = Database()
-        collection_name = database.get_collection_name(self.__collection__)
-
-        message_insert = message.insert(collection_name, [self.as_dict()],
-            True, safe, {})
-
-        response, error = yield gen.Task(database.send_message, message_insert)
+        client = Client(Database(), self.__collection__)
+        response, error = yield gen.Task(client.insert, self.as_dict(),
+            safe=safe, check_keys=check_keys)
 
         post_save.send(instance=self)
 
@@ -142,13 +142,8 @@ class Collection(object):
         """
         pre_remove.send(instance=self)
 
-        database = Database()
-        collection_name = database.get_collection_name(self.__collection__)
-
-        message_delete = message.delete(collection_name, {'_id': self._id},
-            safe, {})
-
-        response, error = yield gen.Task(database.send_message, message_delete)
+        client = Client(Database(), self.__collection__)
+        response, error = yield gen.Task(client.remove, self._id, safe=safe)
 
         post_remove.send(instance=self)
 
@@ -156,7 +151,8 @@ class Collection(object):
             callback((response, error))
 
     @gen.engine
-    def update(self, document=None, safe=True, callback=None):
+    def update(self, document=None, upsert=False, safe=True, multi=False,
+        callback=None):
         """Update a document
 
         :Parameters:
@@ -168,14 +164,11 @@ class Collection(object):
         if not document:
             document = self.as_dict()
 
-        database = Database()
-        collection_name = database.get_collection_name(self.__collection__)
+        client = Client(Database(), self.__collection__)
         spec = {'_id': self._id}
 
-        message_update = message.update(collection_name, False,
-                False, spec, document, safe, {})
-
-        response, error = yield gen.Task(database.send_message, message_update)
+        response, error = yield gen.Task(client.update, spec, document,
+            upsert=upsert, safe=safe, multi=multi)
 
         post_update.send(instance=self)
 
