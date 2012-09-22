@@ -60,7 +60,10 @@
 </code></pre>
 
 <h2>Simple usage</h2>
-<pre><code>from mongotor.database import Database
+<pre><code>
+import tornado.web
+from tornado import gen
+from mongotor.database import Database
 from bson import ObjectId
 
 class Handler(tornado.web.RequestHandler):
@@ -84,10 +87,13 @@ class Handler(tornado.web.RequestHandler):
 </code></pre>
 
 <h2>Support to ReplicaSet</h2>
-<pre><code>from mongotor.database import Database
-from mongotor.node import ReadPreference
-from bson import ObjectId
+<pre><code>
 import time
+import tornado.web
+from tornado import gen
+from bson import ObjectId
+from mongotor.database import Database
+from mongotor.node import ReadPreference
 
 
 class Handler(tornado.web.RequestHandler):
