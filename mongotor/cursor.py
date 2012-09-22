@@ -18,7 +18,6 @@
 from tornado import gen
 from bson import SON
 from mongotor import message
-from mongotor.node import ReadPreference
 
 _QUERY_OPTIONS = {
     "tailable_cursor": 2,

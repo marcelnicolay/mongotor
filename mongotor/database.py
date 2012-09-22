@@ -222,7 +222,9 @@ class Database(object):
     def _command(self, command, read_preference=None,
         connection=None, callback=None):
 
-        read_preference = read_preference or self._read_preference
+        if read_preference is None:
+            read_preference = self._read_preference
+
         client = Client(self, '$cmd')
 
         client.find_one(command, is_command=True, connection=connection,

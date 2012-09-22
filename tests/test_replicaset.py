@@ -2,6 +2,7 @@
 from tornado.ioloop import IOLoop
 from tornado import testing
 from bson import ObjectId
+from mongotor.errors import DatabaseError
 from mongotor.database import Database
 from mongotor.client import Client
 from mongotor.node import ReadPreference
@@ -17,7 +18,7 @@ class ReplicaSetTestCase(testing.AsyncTestCase):
 
     def tearDown(self):
         super(ReplicaSetTestCase, self).tearDown()
-        Database._instance = None
+        Database.disconnect()
 
     def test_configure_nodes(self):
         """[ReplicaSetTestCase] - Configure nodes"""
@@ -35,6 +36,22 @@ class ReplicaSetTestCase(testing.AsyncTestCase):
 
         nodes = Database()._nodes
         nodes.should.have.length_of(2)
+
+    def test_raises_error_when_mode_is_secondary_and_secondary_is_down(self):
+        """[ReplicaSetTestCase] - Raise error when mode is secondary and secondary is down"""
+        os.system('make mongo-kill > /dev/null 2>&1')
+        os.system('make mongo-start-node1')
+        os.system('make mongo-start-arbiter')
+
+        time.sleep(2)
+
+        Database.connect(["localhost:27027", "localhost:27028"], dbname='test')
+        Database().send_message.when.called_with('',
+            read_preference=ReadPreference.SECONDARY)\
+            .throw(DatabaseError)
+
+        os.system('make mongo-start-node2')
+        time.sleep(10)
 
 
 class SecondaryPreferredTestCase(testing.AsyncTestCase):
@@ -57,6 +74,7 @@ class SecondaryPreferredTestCase(testing.AsyncTestCase):
         client.insert(doc, callback=self.stop)
         self.wait()
 
+        time.sleep(2)
         client.find_one(doc, callback=self.stop)
         doc_found, error = self.wait()
 
