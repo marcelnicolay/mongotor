@@ -94,26 +94,24 @@ class Handler(tornado.web.RequestHandler):
 ## Using ORM
 
 ```python
-from mongotor.orm import Collection
-from mongotor.orm.field import StringField, ObjectIdField, BooleanField, DateTimeField
+from mongotor.orm import collection, field
 from mongotor.database import Database
 
 from datetime import datetime
 import tornado.web
 from tornado import gen
 
-# A connection to the MongoDB database needs to be established before perform operations
-# A connection is stabilished using a Databse object
+# A connection to the MongoDB database needs to be
+# established before perform operations
 Database.connect(['localhost:27017','localhost:27018'], 'mongotor_test')
 
-class User(Collection):
-
+class User(collection.Collection):
     __collection__ = "user"
 
-    _id = ObjectIdField()
-    name = StringField()
-    active = BooleanField()
-    created = DateTimeField()
+    _id = field.ObjectIdField()
+    name = field.StringField()
+    active = field.BooleanField()
+    created = field.DateTimeField()
 
 class Handler(tornado.web.RequestHandler):
 
@@ -146,7 +144,7 @@ class Handler(tornado.web.RequestHandler):
         yield gen.Task(users_actives[0].save)
 
         # remove object
-            yield gen.Task(user_found.remove)
+        yield gen.Task(user_found.remove)
 ```
 
 ## Contributing
