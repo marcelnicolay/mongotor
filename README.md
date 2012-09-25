@@ -1,6 +1,6 @@
 # What is MongoTor ?
 
-(MONGOdb + TORnado) is an asynchronous toolkit for accessing ``MongoDB`` with ``Tornado``.
+(MONGOdb + TORnado) is an asynchronous toolkit for access ``MongoDB`` with ``Tornado``.
 
 ## Features
 
