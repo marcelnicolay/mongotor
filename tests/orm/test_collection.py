@@ -177,3 +177,38 @@ class CollectionTestCase(testing.AsyncTestCase):
             .throw(DatabaseError, 'you must be connect')
 
         Database.connect(["localhost:27027", "localhost:27028"], dbname='test')
+
+    def test_update_tracks_changed_attrs(self):
+        """[CollectionTestCase] - Update a document and track dirty fields"""
+        class CollectionTest(Collection):
+            __collection__ = "collection_test"
+            _id = ObjectIdField()
+            string_attr = StringField()
+
+        doc_test = CollectionTest()
+        doc_test._id = ObjectId()
+        doc_test.string_attr = "should be string value"
+
+        doc_test.save(callback=self.stop)
+        self.wait()
+
+        doc_test.string_attr = "should be new string value"
+        "string_attr".should.be.within(doc_test.dirty_fields)
+        "_id".shouldnot.be.within(doc_test.dirty_fields)
+
+    def test_load_obj_does_not_set_dirty_keys(self):
+        """[CollectionTestCase] - Check if freshly loaded document has no dirty fields"""
+        class CollectionTest(Collection):
+            __collection__ = "collection_test"
+            _id = ObjectIdField()
+            string_attr = StringField()
+
+        doc_test = CollectionTest()
+        doc_test._id = ObjectId()
+        doc_test.string_attr = "should be string value"
+
+        doc_test.save(callback=self.stop)
+        self.wait()
+        CollectionTest.objects.find_one(query=doc_test._id, callback=self.stop)
+        db_doc_test = self.wait()
+        db_doc_test.dirty_fields.should.be.empty

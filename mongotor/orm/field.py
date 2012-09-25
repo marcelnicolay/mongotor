@@ -38,7 +38,6 @@ class Field(object):
         return value
 
     def __set__(self, instance, value):
-
         if value is not None and not isinstance(value, self.field_type):
             try:
                 value = self.field_type(value)
@@ -48,7 +47,8 @@ class Field(object):
             except ValueError:
                 raise(TypeError("type of %s must be %s" % (self.name,
                     self.field_type)))
-
+        if self.name in instance._data and instance._data[self.name] != value:
+            instance._dirty.add(self.name)
         instance._data[self.name] = value
 
 

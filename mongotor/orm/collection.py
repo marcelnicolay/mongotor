@@ -76,6 +76,7 @@ class Collection(object):
 
     def __init__(self):
         self._data = {}
+        self._dirty = set()
 
     def as_dict(self):
         items = {}
@@ -85,6 +86,10 @@ class Collection(object):
                 if attr_value != None:
                     items[attr_name] = attr_value
         return items
+
+    @property
+    def dirty_fields(self):
+        return list(self._dirty)
 
     @classmethod
     def create(cls, dictionary):
