@@ -78,9 +78,14 @@ class Collection(object):
         self._data = {}
         self._dirty = set()
 
-    def as_dict(self):
+    def as_dict(self, fields=None):
         items = {}
-        for attr_name, attr_type in self.__class__.__dict__.iteritems():
+        fields = fields or []
+        iteritems = self.__class__.__dict__.iteritems()
+        if fields:
+            iteritems = ((k,v) for k,v in iteritems if k in fields)
+
+        for attr_name, attr_type in iteritems:
             if isinstance(attr_type, Field):
                 attr_value = getattr(self, attr_name)
                 if attr_value != None:
@@ -156,17 +161,25 @@ class Collection(object):
 
     @gen.engine
     def update(self, document=None, upsert=False, safe=True, multi=False,
-        callback=None):
+        callback=None, force=False):
         """Update a document
 
         :Parameters:
         - `safe` (optional): safe update operation
         - `callback` : method which will be called when update is finished
+        - `force`: if True will overide full document
         """
+        if not document and not self.dirty_fields:
+            callback(tuple())
+            return
+
         pre_update.send(instance=self)
 
         if not document:
-            document = self.as_dict()
+            if force:
+                document = self.as_dict()
+            else:
+                document = {"$set": self.as_dict(self.dirty_fields)}
 
         client = Client(Database(), self.__collection__)
         spec = {'_id': self._id}

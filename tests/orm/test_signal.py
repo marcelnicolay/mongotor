@@ -145,13 +145,14 @@ class SignalTestCase(testing.AsyncTestCase):
             instance.string_attr += ' updated'
             SignalTestCase.signal_triggered = True
 
+        collection_test.string_attr = "should be another string value"
         collection_test.update(callback=self.stop)
         self.wait()
 
         CollectionTest.objects.find_one(collection_test._id, callback=self.stop)
 
         collection_found = self.wait()
-        self.assertEquals("should be string value updated", collection_found.string_attr)
+        self.assertEquals("should be another string value updated", collection_found.string_attr)
         self.assertTrue(SignalTestCase.signal_triggered)
 
     def test_update_sends_post_update_signal_correctly(self):
@@ -172,8 +173,9 @@ class SignalTestCase(testing.AsyncTestCase):
             self.assertEquals(collection_test.string_attr, instance.string_attr)
             SignalTestCase.signal_triggered = True
 
+        collection_test.string_attr = "should be another string value"
         collection_test.update(callback=self.stop)
         self.wait()
 
-        self.assertEquals("should be string value", collection_test.string_attr)
+        self.assertEquals("should be another string value", collection_test.string_attr)
         self.assertTrue(SignalTestCase.signal_triggered)
