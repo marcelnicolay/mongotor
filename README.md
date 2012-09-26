@@ -1,6 +1,6 @@
 # What is MongoTor ?
 
-(MONGOdb + TORnado) is an asynchronous toolkit for working with ``mongodb`` inside a ``tornado`` app. Mongotor has a pure python + tornado implementation and only depends on tornado and bson (provided by pymongo)
+(MONGOdb + TORnado) is an asynchronous toolkit for working with ``mongodb`` inside a ``tornado`` app. Mongotor has a pure implementation of python + tornado and only depends on tornado and bson (provided by pymongo)
 
 ## Features
 
