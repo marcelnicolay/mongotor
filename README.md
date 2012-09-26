@@ -1,16 +1,26 @@
 # What is MongoTor ?
 
-(MONGOdb + TORnado) is an asynchronous toolkit for access ``MongoDB`` with ``Tornado``.
+(MONGOdb + TORnado) is an asynchronous toolkit for working with ``mongodb`` inside a ``tornado`` app. Mongotor has a pure python + tornado implementation and only depends on tornado and bson (provided by pymongo)
 
 ## Features
 
-* ``ORM`` like to map documents and fields
-* Advanced connection management (``replica sets``, slave okay)
+MongoTor is still an alpha project, but already implements the following features:
+
+* Support for ``replica sets``
 * Automatic ``reconnection``
 * Connection ``pooling``
-* Support for running database commands (``find``, ``find_one``, ``count``, ``sum``, ``mapreduce`` etc...)
+* Support for running database commands (``count``, ``sum``, ``mapreduce`` etc...)
+* ``ORM`` like to map documents and fields
 * ``Signals`` for pre_save, post_save, pre_remove, post_remove, pre_update and post_update
 * 100% of code coverage by test
+
+The next steps are provide support to:
+
+* sharding
+* authentication
+* nearest preference in replica sets
+* gridfs
+* all python versions (2.5, 2.6, 2.7, 3.2 and PyPy), only python 2.7 is tested now
 
 ## Documentation
 
@@ -20,13 +30,18 @@ Visit our online [documentation](http://mongotor.readthedocs.org/) for more exam
 
 [PyMongo](http://api.mongodb.org/python/current/) is a recommended way to work with MongoDB in python, but isn't asynchronous and not run inside de tornado's ioloop. If you use pymongo you won't take the advantages of tornado.
 
+## Why not motor ?
+
+[Motor](http://emptysquare.net/motor/) wraps PyMongo and makes it async with greenlet. Is a great project, but it uses greenlet. If you can use greenlets why not use gevent instead of tornado? PyMongo already works with gevent and you dont need to thinking about write all of your code with callbacks. My point is, if you are using a very powerfull non-blocking web server with a pure python code, you'll probably want to work with a pure tornado driver for accessing mongo, obviously since this module has a full support to mongodb features like pymongo.
+
 ## Why not asyncmongo ?
 
-[AsyncMongo](https://github.com/bitly/asyncmongo) is an asynchronous library for accessing mongo with tornado.ioloop, but don't implement replica set, don't have an ORM, I don't like her connection poolin, and i don't trust in your tests. 
+[AsyncMongo](https://github.com/bitly/asyncmongo) is an asynchronous library for accessing mongodb with tornado.ioloop, but don't implement replica set and other mongodb features.
 
 Besides, this project is not walking very well, or better, very fast. Exist a lot of issues and pull requests that aren't looked.
 
 I am very thankful to asyncmongo, i worked with it in some projects and it's been served as inspiration, but now, I am very excited to write my own library, more flexible, fast, secure and that will walking faster.
+
 
 ## Installing
 
