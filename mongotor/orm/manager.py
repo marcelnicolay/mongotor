@@ -52,12 +52,12 @@ class Manager(object):
 
     @gen.engine
     def count(self, query=None, callback=None):
-        command = {
+        command = SON({
             "count": self.collection.__collection__
-        }
+        })
 
         if query:
-            command["query"] = query
+            command.update({'query': query})
 
         result, error = yield gen.Task(Database().command, command)
 
@@ -71,12 +71,12 @@ class Manager(object):
     def distinct(self, key, callback, query=None):
         """Returns a list of distinct values for the given
         key across collection"""
-        command = {
+        command = SON({
             "distinct": self.collection.__collection__,
             "key": key,
-        }
+        })
         if query:
-            command['query'] = query
+            command.update({'query': query})
 
         result, error = yield gen.Task(Database().command, command)
 
