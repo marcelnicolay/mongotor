@@ -224,7 +224,7 @@ class CollectionTestCase(testing.AsyncTestCase):
         doc_test.string_attr = "should be string value"
 
         doc_test.save(callback=self.stop)
-        
+
         doc_test.string_attr = "changed"
         doc_test.update(callback=self.stop, force=True)
         self.wait()

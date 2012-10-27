@@ -14,11 +14,13 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+import logging
 from tornado import gen
-from mongotor.node import Node, ReadPreference
+from mongotor.node import ReadPreference
 from mongotor.cursor import Cursor
 from mongotor import message
+
+log = logging.getLogger(__name__)
 
 
 class Client(object):
@@ -49,6 +51,7 @@ class Client(object):
         message_insert = message.insert(self._collection_name, doc_or_docs,
             check_keys, safe, {})
 
+        log.debug("mongo: db.{}.insert({})".format(self._collection_name, doc_or_docs))
         response, error = yield gen.Task(self._database.send_message,
             message_insert, read_preference=ReadPreference.PRIMARY)
 
@@ -72,6 +75,7 @@ class Client(object):
         message_delete = message.delete(self._collection_name, spec_or_id,
             safe, {})
 
+        log.debug("mongo: db.{}.remove({})".format(self._collection_name, spec_or_id))
         response, error = yield gen.Task(self._database.send_message,
             message_delete, read_preference=ReadPreference.PRIMARY)
 
@@ -107,6 +111,9 @@ class Client(object):
 
         message_update = message.update(self._collection_name, upsert,
                 multi, spec, document, safe, {})
+
+        log.debug("mongo: db.{}.update({}, {}, {}, {})".format(
+            self._collection_name, spec, document, upsert, multi))
 
         response, error = yield gen.Task(self._database.send_message,
             message_update, read_preference=ReadPreference.PRIMARY)
@@ -184,6 +191,12 @@ class Client(object):
         callback = kwargs['callback']
         del kwargs['callback']
 
+        log.debug("mongo: db.{}.find({spec}).limit({limit}).sort({sort})".format(
+            self._collection_name,
+            spec=kwargs.get('spec', {}),
+            sort=kwargs.get('sort', {}),
+            limit=kwargs.get('limit', '')
+        ))
         cursor = Cursor(database=self._database, collection=self._collection,
             *args, **kwargs)
         cursor.find(callback=callback)
