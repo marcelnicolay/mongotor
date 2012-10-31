@@ -81,7 +81,7 @@ class Connection(object):
             return response, IntegrityError(response['data'][0]['err'],
                 code=response['data'][0]['code'])
 
-        logger.info('response: %s' % response)
+        logger.debug('response: %s' % response)
         return response, None
 
     def _close_stream(self):
