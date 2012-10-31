@@ -27,7 +27,7 @@ class ConnectionTestCase(testing.AsyncTestCase):
         """[ConnectionTestCase] - Raises error when can't connect to mongo"""
 
         Connection.when.called_with(host="localhost", port=27000) \
-            .should.throw(InterfaceError, "[Errno 61] Connection refused")
+            .should.throw(InterfaceError, "[Errno 111] Connection refused")
 
     def test_connect_to_mongo(self):
         """[ConnectionTestCase] - Can stabilish connection to mongo"""
