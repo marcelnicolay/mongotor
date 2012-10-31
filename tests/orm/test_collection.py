@@ -5,10 +5,12 @@ from mongotor.database import Database
 from mongotor.orm.collection import Collection
 from mongotor.orm.manager import Manager
 from mongotor.orm.field import (ObjectIdField, StringField, DateTimeField,
-    IntegerField, BooleanField, FloatField, ListField, ObjectField)
+    IntegerField, BooleanField, FloatField, ListField, ObjectField,
+    LongField, DecimalField, UrlField, UuidField, EmailField)
 from mongotor.errors import DatabaseError
 from bson.objectid import ObjectId
 import sure
+import uuid
 
 
 class CollectionTestCase(testing.AsyncTestCase):
@@ -246,3 +248,21 @@ class CollectionTestCase(testing.AsyncTestCase):
         doc_test.update(callback=self.stop)
         db_doc_test = self.wait()
         db_doc_test.should.be(tuple())
+
+    def test_get_fields_from_base_classes(self):
+        class CollectionTest(Collection):
+            __collection__ = "collection_test"
+            _id = ObjectIdField(default=ObjectId())
+            base_url_field = UrlField(default="https://www.test.com")
+            base_decimal_field = DecimalField(default=2.1)
+
+        class ChildCollectionTest(CollectionTest):
+            child_uuid_field = UuidField(default=uuid.uuid4())
+            child_email_field = EmailField(default="test@test.com")
+
+        class SecondChildCollectionTest(ChildCollectionTest):
+            second_child_long_field = LongField(default=1000)
+
+        test_instance = SecondChildCollectionTest()
+        test_dict = test_instance.as_dict()
+        test_dict.should.be.length_of(6)
