@@ -21,7 +21,6 @@ import decimal
 from datetime import datetime
 from bson import ObjectId
 
-
 class Field(object):
 
     def __init__(self, default=None, name=None, field_type=None):
@@ -66,6 +65,7 @@ class StringField(Field):
         super(StringField, self).__init__(field_type=unicode, *args, **kwargs)
 
     def _validate(self, value):
+        value = super(StringField, self)._validate(value)
         if self.regex is not None and self.regex.match(value) is None:
             raise(TypeError("Value did not match regex"))
 
@@ -114,6 +114,7 @@ class NumberField(Field):
             *args, **kwargs)
 
     def _validate(self, value):
+        value = super(NumberField, self)._validate(value)
         if self.min_value is not None and value < self.min_value:
             raise(TypeError("Value can not be less than %s" % (self.min_value)))
 
@@ -183,3 +184,43 @@ class UuidField(Field):
 
     def __init__(self, *args, **kwargs):
         super(UuidField, self).__init__(field_type=uuid.UUID, *args, **kwargs)
+
+
+class Md5Field(Field):
+
+    length = 32
+
+    def __init__(self, *args, **kwargs):
+        super(Md5Field, self).__init__(field_type=unicode, *args, **kwargs)
+
+    def _validate(self, value):
+        value = super(Md5Field, self)._validate(value)
+        if len(value) is not self.length:
+            raise(TypeError("Md5 dose not have the correct length"))
+
+        try:
+            int(value, 16)
+        except:
+            raise(TypeError("The Md5 hash should be a 16byte hash value"))
+
+        return value
+
+
+class Sha1Field(Field):
+
+    length = 40
+
+    def __init__(self, *args, **kwargs):
+        super(Sha1Field, self).__init__(field_type=unicode, *args, **kwargs)
+
+    def _validate(self, value):
+        value = super(Sha1Field, self)._validate(value)
+        if len(value) is not self.length:
+            raise(TypeError("Sha1 dose not have the correct length"))
+
+        try:
+            int(value, 20)
+        except:
+            raise(TypeError("The Sha1 hash should be a 20byte hash value"))
+
+        return  value
