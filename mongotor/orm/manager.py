@@ -50,22 +50,9 @@ class Manager(object):
 
         callback(items)
 
-    @gen.engine
     def count(self, query=None, callback=None):
-        command = SON({
-            "count": self.collection.__collection__
-        })
-
-        if query:
-            command.update({'query': query})
-
-        result, error = yield gen.Task(Database().command, command)
-
-        total = 0
-        if result and len(result) > 0 and 'n' in result:
-            total = int(result['n'])
-
-        callback(total)
+        client = Client(Database(), self.collection.__collection__)
+        client.find(query).count(callback=callback)
 
     @gen.engine
     def distinct(self, key, callback, query=None):
