@@ -143,7 +143,6 @@ class Client(object):
 
         self.find(spec_or_id, limit=-1, **kwargs)
 
-    @gen.engine
     def find(self, *args, **kwargs):
         """Query the database.
 
@@ -188,8 +187,6 @@ class Client(object):
           - `read_preferences` (optional): The read preference for
             this query.
         """
-        callback = kwargs['callback']
-        del kwargs['callback']
 
         log.debug("mongo: db.{}.find({spec}).limit({limit}).sort({sort})".format(
             self._collection_name,
@@ -199,4 +196,8 @@ class Client(object):
         ))
         cursor = Cursor(database=self._database, collection=self._collection,
             *args, **kwargs)
-        cursor.find(callback=callback)
+
+        if 'callback' in kwargs:
+            cursor.find(callback=kwargs['callback'])
+        else:
+            return cursor
