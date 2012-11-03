@@ -47,8 +47,10 @@ class Field(object):
             except ValueError:
                 raise(TypeError("type of %s must be %s" % (self.name,
                     self.field_type)))
-        if self.name in instance._data and instance._data[self.name] != value:
+
+        if self.name not in instance._data or instance._data[self.name] != value:
             instance._dirty.add(self.name)
+
         instance._data[self.name] = value
 
 

@@ -33,7 +33,7 @@ class Manager(object):
 
         instance = None
         if result:
-            instance = self.collection.create(result)
+            instance = self.collection.create(result, cleaned=True)
 
         callback(instance)
 
@@ -46,7 +46,7 @@ class Manager(object):
 
         if result:
             for item in result:
-                items.append(self.collection.create(item))
+                items.append(self.collection.create(item, cleaned=True))
 
         callback(items)
 
@@ -120,7 +120,7 @@ class Manager(object):
 
         if result and result['ok']:
             for item in result['results']:
-                items.append(self.collection.create(item['obj']))
+                items.append(self.collection.create(item['obj'], cleaned=True))
 
         callback(items)
 
