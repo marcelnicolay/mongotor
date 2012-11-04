@@ -106,6 +106,8 @@ class Database(object):
         for node in self._nodes:
             node.config(callback)
 
+        IOLoop.instance().add_timeout(timedelta(seconds=5), self._config_nodes)
+
     @classmethod
     def connect(cls, addresses, dbname, read_preference=None, **kwargs):
         """Connect to database

@@ -245,10 +245,13 @@ class CollectionTestCase(testing.AsyncTestCase):
         doc_test.save(callback=self.stop)
 
         doc_test.string_attr = "changed"
+
         doc_test.update(callback=self.stop, force=True)
         self.wait()
+
         CollectionTest.objects.find_one(query=doc_test._id, callback=self.stop)
         db_doc_test = self.wait()
+
         db_doc_test.string_attr.should.be.equal("changed")
 
     def test_empty_callback(self):
