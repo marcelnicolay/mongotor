@@ -27,13 +27,14 @@ logger = logging.getLogger(__name__)
 
 class Connection(object):
 
-    def __init__(self, host, port, pool=None, autoreconnect=True, timeout=5):
+    def __init__(self, host, port, pool=None, autoreconnect=True, maxusage=0, timeout=5):
         self._host = host
         self._port = port
         self._pool = pool
         self._autoreconnect = autoreconnect
         self._timeout = timeout
         self._connected = False
+        self._maxusage = maxusage
 
         self._connect()
 
@@ -48,6 +49,7 @@ class Connection(object):
             self._stream.set_close_callback(self._close_stream)
 
             self._connected = True
+            self.usage = 0
 
         except socket.error, error:
             raise InterfaceError(error)
@@ -108,6 +110,11 @@ class Connection(object):
             else:
                 raise InterfaceError('connection is closed and autoreconnect is false')
 
+        if self._maxusage and self.usage >= self._maxusage:
+            logger.debug('connection max usage expired, renewing...')
+            self.close(release=False)
+            self._connect()
+
         self._send_message(message, callback)
 
     @gen.engine
@@ -121,8 +128,7 @@ class Connection(object):
 
             data = yield gen.Task(self._stream.read_bytes, length - 16)
 
-            if self._pool:
-                self._pool.release(self)
+            self.release()
 
             response, error = self._parse_response(data, request_id)
 
@@ -131,3 +137,5 @@ class Connection(object):
 
         except IOError, e:
             raise e
+
+        self.usage += 1

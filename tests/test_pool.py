@@ -1,11 +1,11 @@
 # coding: utf-8
 from tornado.ioloop import IOLoop
 from tornado import testing
+from bson import ObjectId
 from mongotor.pool import ConnectionPool
 from mongotor.errors import TooManyConnections
-import time
+from mongotor import message
 import sure
-import os
 
 
 class ConnectionPoolTestCase(testing.AsyncTestCase):
@@ -75,3 +75,24 @@ class ConnectionPoolTestCase(testing.AsyncTestCase):
         pool._connections.should.be.equal(1)
         pool._idle_connections.should.have.length_of(1)
         pool._idle_connections[0].should.be.equal(connection)
+
+    def test_maxusage_in_pool_connections(self):
+        """[ConnectionPoolTestCase] - test maxusage in connections"""
+        pool = ConnectionPool('localhost', 27027, dbname='test', maxconnections=1, maxusage=300)
+
+        message_test = message.query(0, 'mongotor_test.$cmd', 0, 1,
+            {'driverOIDTest': ObjectId()})
+
+        for i in xrange(300):
+            pool.connection(self.stop)
+            connection = self.wait()
+
+            connection.send_message(message_test, callback=self.stop)
+            self.wait()
+
+        connection.usage.should.be.equal(300)
+
+        connection.send_message(message_test, callback=self.stop)
+        self.wait()
+
+        connection.usage.should.be.equal(1)

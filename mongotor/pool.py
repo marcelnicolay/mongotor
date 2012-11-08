@@ -57,7 +57,7 @@ class ConnectionPool(object):
     def _create_connection(self):
         log.debug('creating new connection')
         return Connection(host=self._host, port=self._port, pool=self,
-            autoreconnect=self._autoreconnect)
+            autoreconnect=self._autoreconnect, maxusage=self._maxusage)
 
     def connection(self, callback=None, retries=0):
         """Get a connection from pool
@@ -90,7 +90,7 @@ class ConnectionPool(object):
         finally:
             self._condition.release()
 
-        log.debug('connection acquired')
+        log.debug('connection retrieved')
         return callback(conn)
 
     def release(self, conn):
