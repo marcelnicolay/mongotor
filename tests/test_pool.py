@@ -59,12 +59,12 @@ class ConnectionPoolTestCase(testing.AsyncTestCase):
         pool.connection(self.stop)
         connection = self.wait()
 
-        pool._connections.should.be.equal(1)
-
         def release(conn):
             conn.should.be.equal(connection)
             _release(conn)
             self.stop()
+
+        pool._idle_connections.should.have.length_of(9)
 
         _release = pool.release
         pool.release = release
@@ -72,13 +72,11 @@ class ConnectionPoolTestCase(testing.AsyncTestCase):
 
         self.wait()
 
-        pool._connections.should.be.equal(1)
-        pool._idle_connections.should.have.length_of(1)
-        pool._idle_connections[0].should.be.equal(connection)
+        pool._idle_connections.should.have.length_of(10)
 
     def test_maxusage_in_pool_connections(self):
         """[ConnectionPoolTestCase] - test maxusage in connections"""
-        pool = ConnectionPool('localhost', 27027, dbname='test', maxconnections=1, maxusage=300)
+        pool = ConnectionPool('localhost', 27027, dbname='test', maxconnections=1, maxusage=299)
 
         message_test = message.query(0, 'mongotor_test.$cmd', 0, 1,
             {'driverOIDTest': ObjectId()})
@@ -90,9 +88,54 @@ class ConnectionPoolTestCase(testing.AsyncTestCase):
             connection.send_message(message_test, callback=self.stop)
             self.wait()
 
-        connection.usage.should.be.equal(300)
+        pool.connection(self.stop)
+        new_connection = self.wait()
 
-        connection.send_message(message_test, callback=self.stop)
+        new_connection.usage.should.be.equal(0)
+        new_connection.should_not.be.equal(connection)
+        new_connection.send_message(message_test, callback=self.stop)
+
         self.wait()
 
-        connection.usage.should.be.equal(1)
+        new_connection.usage.should.be.equal(1)
+
+    def test_load_in_pool_connections(self):
+        """[ConnectionPoolTestCase] - test load in connections"""
+        pool = ConnectionPool('localhost', 27027, dbname='test', maxconnections=10, maxusage=29)
+
+        message_test = message.query(0, 'mongotor_test.$cmd', 0, 1,
+            {'driverOIDTest': ObjectId()})
+
+        for i in xrange(300):
+            pool.connection(self.stop)
+            connection = self.wait()
+
+            connection.send_message(message_test, callback=self.stop)
+            self.wait()
+
+        pool._idle_connections.should.have.length_of(0)
+
+        for i in xrange(300):
+            pool.connection(self.stop)
+            connection = self.wait()
+
+            connection.send_message(message_test, callback=self.stop)
+            self.wait()
+
+        pool._idle_connections.should.have.length_of(0)
+
+    def test_load_two_in_pool_connections(self):
+        """[ConnectionPoolTestCase] - test load two in connections"""
+        pool = ConnectionPool('localhost', 27027, dbname='test', maxconnections=10, maxusage=29)
+
+        message_test = message.query(0, 'mongotor_test.$cmd', 0, 1,
+            {'driverOIDTest': ObjectId()})
+
+        for i in xrange(3000):
+            pool.connection(self.stop)
+            connection = self.wait()
+
+            connection.send_message(message_test, callback=self.stop)
+            self.wait()
+
+        pool._idle_connections.should.have.length_of(0)

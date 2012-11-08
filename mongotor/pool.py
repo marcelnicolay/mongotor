@@ -18,6 +18,7 @@ import logging
 from datetime import timedelta
 from threading import Condition
 from tornado.ioloop import IOLoop
+from tornado import gen
 from functools import partial
 from mongotor.connection import Connection
 from mongotor.errors import TooManyConnections
@@ -54,10 +55,15 @@ class ConnectionPool(object):
         self._idle_connections = []
         self._condition = Condition()
 
+        for i in range(self._maxconnections):
+            conn = self._create_connection()
+            self._idle_connections.append(conn)
+            self._connections += 1
+
     def _create_connection(self):
         log.debug('creating new connection')
         return Connection(host=self._host, port=self._port, pool=self,
-            autoreconnect=self._autoreconnect, maxusage=self._maxusage)
+            autoreconnect=self._autoreconnect)
 
     def connection(self, callback=None, retries=0):
         """Get a connection from pool
@@ -67,7 +73,6 @@ class ConnectionPool(object):
 
         """
         self._condition.acquire()
-
         try:
             conn = self._idle_connections.pop(0)
 
@@ -91,9 +96,15 @@ class ConnectionPool(object):
             self._condition.release()
 
         log.debug('connection retrieved')
-        return callback(conn)
+        callback(conn)
 
     def release(self, conn):
+        if self._maxusage and conn.usage > self._maxusage:
+            log.debug('connection max usage expired, renewing...')
+            conn.close(release=False)
+            self._connections -= 1
+            return
+
         log.debug('release connection')
         self._condition.acquire()
         try:

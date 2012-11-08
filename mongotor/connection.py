@@ -27,19 +27,18 @@ logger = logging.getLogger(__name__)
 
 class Connection(object):
 
-    def __init__(self, host, port, pool=None, autoreconnect=True, maxusage=0, timeout=5):
+    def __init__(self, host, port, pool=None, autoreconnect=True, timeout=5):
         self._host = host
         self._port = port
         self._pool = pool
         self._autoreconnect = autoreconnect
         self._timeout = timeout
         self._connected = False
-        self._maxusage = maxusage
 
         self._connect()
 
     def _connect(self):
-
+        self.usage = 0
         try:
             socket.timeout(self._timeout)
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
@@ -49,8 +48,6 @@ class Connection(object):
             self._stream.set_close_callback(self._close_stream)
 
             self._connected = True
-            self.usage = 0
-
         except socket.error, error:
             raise InterfaceError(error)
 
@@ -62,7 +59,7 @@ class Connection(object):
         assert _request_id == request_id, \
             "ids don't match %r %r" % (request_id, _request_id)
 
-        operation = 1 # who knows why
+        operation = 1  # who knows why
         assert operation == struct.unpack("<i", header[12:])[0]
         logger.debug('%s' % length)
         logger.debug('waiting for another %d bytes' % (length - 16))
@@ -110,15 +107,12 @@ class Connection(object):
             else:
                 raise InterfaceError('connection is closed and autoreconnect is false')
 
-        if self._maxusage and self.usage >= self._maxusage:
-            logger.debug('connection max usage expired, renewing...')
-            self.close(release=False)
-            self._connect()
-
         self._send_message(message, callback)
 
     @gen.engine
     def _send_message(self, message, callback=None):
+        self.usage += 1
+
         (request_id, message) = message
         try:
             self._stream.write(message)
@@ -137,5 +131,3 @@ class Connection(object):
 
         except IOError, e:
             raise e
-
-        self.usage += 1
