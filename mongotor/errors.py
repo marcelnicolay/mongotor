@@ -24,6 +24,10 @@ class InterfaceError(Error):
     pass
 
 
+class TooManyConnections(InterfaceError):
+    pass
+
+
 class InvalidOperationError(Error):
     pass
 

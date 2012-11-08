@@ -14,11 +14,15 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+import logging
+from datetime import timedelta
 from threading import Condition
 from tornado.ioloop import IOLoop
 from functools import partial
 from mongotor.connection import Connection
+from mongotor.errors import TooManyConnections
+
+log = logging.getLogger(__name__)
 
 
 class ConnectionPool(object):
@@ -51,10 +55,11 @@ class ConnectionPool(object):
         self._condition = Condition()
 
     def _create_connection(self):
+        log.debug('creating new connection')
         return Connection(host=self._host, port=self._port, pool=self,
             autoreconnect=self._autoreconnect)
 
-    def connection(self, callback):
+    def connection(self, callback=None, retries=0):
         """Get a connection from pool
 
         :Parameters:
@@ -70,8 +75,12 @@ class ConnectionPool(object):
             if self._maxconnections and \
                 self._connections >= self._maxconnections:
 
-                retry_connection = partial(self.connection, callback)
-                IOLoop.instance().add_callback(retry_connection)
+                if retries > 10:
+                    raise TooManyConnections()
+
+                log.warn('too many connections, retries {}'.format(retries))
+                retry_connection = partial(self.connection, retries=(retries + 1), callback=callback)
+                IOLoop.instance().add_timeout(timedelta(microseconds=300), retry_connection)
 
                 return
 
@@ -81,9 +90,11 @@ class ConnectionPool(object):
         finally:
             self._condition.release()
 
+        log.debug('connection acquired')
         return callback(conn)
 
     def release(self, conn):
+        log.debug('release connection')
         self._condition.acquire()
         try:
             self._idle_connections.append(conn)
@@ -97,7 +108,7 @@ class ConnectionPool(object):
             while self._idle_connections:  # close all idle connections
                 con = self._idle_connections.pop(0)
                 try:
-                    con._close()
+                    con.close(release=False)
                 except Exception:
                     pass
                 self._connections -= 1

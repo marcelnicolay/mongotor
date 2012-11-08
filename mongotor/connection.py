@@ -85,12 +85,19 @@ class Connection(object):
         return response, None
 
     def _close_stream(self):
-        self._connected = False
+        if self._connected:
+            logger.warn('connection stream closed')
+            self._connected = False
+            self.release()
 
-    def close(self):
+    def close(self, release=True):
         self._connected = False
         self._stream.close()
 
+        if release:
+            self.release()
+
+    def release(self):
         if self._pool:
             self._pool.release(self)
 
