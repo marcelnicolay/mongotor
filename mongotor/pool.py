@@ -58,10 +58,13 @@ class ConnectionPool(object):
         for i in range(self._maxconnections):
             conn = self._create_connection()
             self._idle_connections.append(conn)
-            self._connections += 1
+
+    def __repr__(self):
+        return "ConnectionPool using:{}, idle:{} :::: "\
+            .format(self._connections, len(self._idle_connections))
 
     def _create_connection(self):
-        log.debug('creating new connection')
+        log.debug('{} creating new connection'.format(self))
         return Connection(host=self._host, port=self._port, pool=self,
             autoreconnect=self._autoreconnect)
 
@@ -74,57 +77,62 @@ class ConnectionPool(object):
         """
         self._condition.acquire()
         try:
-            conn = self._idle_connections.pop(0)
+            try:
+                conn = self._idle_connections.pop(0)
+            except IndexError:
+                if self._maxconnections and self._connections >= self._maxconnections:
+                    if retries > 10:
+                        raise TooManyConnections()
 
-        except IndexError:
-            if self._maxconnections and \
-                self._connections >= self._maxconnections:
+                    log.warn('{} too many connections, retries {}'.format(self, retries))
+                    retry_connection = partial(self.connection, retries=(retries + 1), callback=callback)
+                    IOLoop.instance().add_timeout(timedelta(microseconds=300), retry_connection)
 
-                if retries > 10:
-                    raise TooManyConnections()
+                    return
 
-                log.warn('too many connections, retries {}'.format(retries))
-                retry_connection = partial(self.connection, retries=(retries + 1), callback=callback)
-                IOLoop.instance().add_timeout(timedelta(microseconds=300), retry_connection)
+                conn = self._create_connection()
 
-                return
-
-            conn = self._create_connection()
             self._connections += 1
 
         finally:
             self._condition.release()
 
-        log.debug('connection retrieved')
+        log.debug('{} connection retrieved'.format(self))
         callback(conn)
 
     def release(self, conn):
-        if conn.closed():
-            log.debug('connection closed, renewing...')
-            self._connections -= 1
-            return
-
         if self._maxusage and conn.usage > self._maxusage:
-            log.debug('connection max usage expired, renewing...')
-            conn.close(release=False)
-            self._connections -= 1
+            if not conn.closed():
+                log.debug('{} - connection max usage expired, renewing...'.format(self))
+                self._connections -= 1
+                conn.close()
             return
 
-        log.debug('release connection')
         self._condition.acquire()
+
+        if conn in self._idle_connections:
+            log.debug('{} - connection max usage expired, renewing...'.format(self))
+            self._condition.release()
+            return
+
         try:
             self._idle_connections.append(conn)
+            self._condition.notify()
         finally:
+            self._connections -= 1
             self._condition.release()
+
+        log.debug('{} release connection'.format(self))
 
     def close(self):
         """Close all connections in the pool."""
+        log.debug('{} closing...'.format(self))
         self._condition.acquire()
         try:
             while self._idle_connections:  # close all idle connections
                 con = self._idle_connections.pop(0)
                 try:
-                    con.close(release=False)
+                    con.close()
                 except Exception:
                     pass
                 self._connections -= 1

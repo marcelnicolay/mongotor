@@ -37,6 +37,8 @@ class Connection(object):
 
         self._connect()
 
+        logger.debug('{} created'.format(self))
+
     def _connect(self):
         self.usage = 0
         try:
@@ -45,11 +47,14 @@ class Connection(object):
             s.connect((self._host, self._port))
 
             self._stream = iostream.IOStream(s)
-            self._stream.set_close_callback(self._close_stream)
+            self._stream.set_close_callback(self._socket_close)
 
             self._connected = True
         except socket.error, error:
             raise InterfaceError(error)
+
+    def __repr__(self):
+        return "Connection {} ::: ".format(id(self))
 
     def _parse_header(self, header, request_id):
         #logger.debug('got data %r' % header)
@@ -83,55 +88,58 @@ class Connection(object):
         #logger.debug('response: %s' % response)
         return response, None
 
-    def _close_stream(self):
-        if self._connected:
-            logger.warn('connection stream closed')
-            self._connected = False
-            self.release()
+    def _socket_close(self):
+        logger.debug('{} connection stream closed'.format(self))
+        self._connected = False
+        self.release()
 
-    def closed(self):
-        return not self._connected
-
-    def close(self, release=True):
+    def close(self):
+        logger.debug('{} connection close'.format(self))
         self._connected = False
         self._stream.close()
 
-        if release:
-            self.release()
+    def closed(self):
+        return not self._connected
 
     def release(self):
         if self._pool:
             self._pool.release(self)
 
+    @gen.engine
     def send_message(self, message, callback):
-        if not self._connected:
-            if self._autoreconnect:
-                self._connect()
-            else:
-                raise InterfaceError('connection is closed and autoreconnect is false')
+        try:
+            if self.closed():
+                if self._autoreconnect:
+                    self._connect()
+                else:
+                    raise InterfaceError('connection is closed and autoreconnect is false')
 
-        self._send_message(message, callback)
+            response = yield gen.Task(self._send_message, message)
+            callback(response)
+        except IOError:
+            logger.exception('{} problems sending message'.format(self))
+            callback((None, InterfaceError('connection closed')))
+        finally:
+            self.release()
 
     @gen.engine
     def _send_message(self, message, callback=None):
         self.usage += 1
 
-        (request_id, message) = message
+        (self.request_id, message) = message
         try:
             self._stream.write(message)
 
             header_data = yield gen.Task(self._stream.read_bytes, 16)
-            length = self._parse_header(header_data, request_id)
+            length = self._parse_header(header_data, self.request_id)
 
             data = yield gen.Task(self._stream.read_bytes, length - 16)
 
-            response, error = self._parse_response(data, request_id)
+            response, error = self._parse_response(data, self.request_id)
 
             if callback:
                 callback((response, error))
 
         except IOError, e:
-            logger.exception('problems sending message')
+            self._connected = False
             raise e
-        finally:
-            self.release()

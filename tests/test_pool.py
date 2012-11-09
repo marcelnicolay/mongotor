@@ -72,8 +72,8 @@ class ConnectionPoolTestCase(testing.AsyncTestCase):
 
         self.wait()
 
-        pool._connections.should.be.equal(9)
-        pool._idle_connections.should.have.length_of(9)
+        pool._connections.should.be.equal(0)
+        pool._idle_connections.should.have.length_of(10)
 
     def test_maxusage_in_pool_connections(self):
         """[ConnectionPoolTestCase] - test maxusage in connections"""
@@ -140,3 +140,4 @@ class ConnectionPoolTestCase(testing.AsyncTestCase):
             self.wait()
 
         pool._idle_connections.should.have.length_of(0)
+        pool._connections.should.be.equal(0)

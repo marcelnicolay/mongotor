@@ -190,7 +190,7 @@ class Client(object):
 
         log.debug("mongo: db.{}.find({spec}).limit({limit}).sort({sort})".format(
             self._collection_name,
-            spec=kwargs.get('spec', {}),
+            spec=args[0] or {},
             sort=kwargs.get('sort', {}),
             limit=kwargs.get('limit', '')
         ))
