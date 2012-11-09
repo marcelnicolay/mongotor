@@ -99,6 +99,11 @@ class ConnectionPool(object):
         callback(conn)
 
     def release(self, conn):
+        if conn.closed():
+            log.debug('connection closed, renewing...')
+            self._connections -= 1
+            return
+
         if self._maxusage and conn.usage > self._maxusage:
             log.debug('connection max usage expired, renewing...')
             conn.close(release=False)

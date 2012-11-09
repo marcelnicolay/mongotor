@@ -72,7 +72,8 @@ class ConnectionPoolTestCase(testing.AsyncTestCase):
 
         self.wait()
 
-        pool._idle_connections.should.have.length_of(10)
+        pool._connections.should.be.equal(9)
+        pool._idle_connections.should.have.length_of(9)
 
     def test_maxusage_in_pool_connections(self):
         """[ConnectionPoolTestCase] - test maxusage in connections"""
@@ -131,7 +132,7 @@ class ConnectionPoolTestCase(testing.AsyncTestCase):
         message_test = message.query(0, 'mongotor_test.$cmd', 0, 1,
             {'driverOIDTest': ObjectId()})
 
-        for i in xrange(3000):
+        for i in xrange(30000):
             pool.connection(self.stop)
             connection = self.wait()
 

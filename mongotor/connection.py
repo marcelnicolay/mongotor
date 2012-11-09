@@ -89,6 +89,9 @@ class Connection(object):
             self._connected = False
             self.release()
 
+    def closed(self):
+        return not self._connected
+
     def close(self, release=True):
         self._connected = False
         self._stream.close()
@@ -122,12 +125,13 @@ class Connection(object):
 
             data = yield gen.Task(self._stream.read_bytes, length - 16)
 
-            self.release()
-
             response, error = self._parse_response(data, request_id)
 
             if callback:
                 callback((response, error))
 
         except IOError, e:
+            logger.exception('problems sending message')
             raise e
+        finally:
+            self.release()
