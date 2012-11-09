@@ -52,7 +52,7 @@ class Connection(object):
             raise InterfaceError(error)
 
     def _parse_header(self, header, request_id):
-        logger.debug('got data %r' % header)
+        #logger.debug('got data %r' % header)
         length = int(struct.unpack("<i", header[:4])[0])
         _request_id = struct.unpack("<i", header[8:12])[0]
 
@@ -61,8 +61,8 @@ class Connection(object):
 
         operation = 1  # who knows why
         assert operation == struct.unpack("<i", header[12:])[0]
-        logger.debug('%s' % length)
-        logger.debug('waiting for another %d bytes' % (length - 16))
+        #logger.debug('%s' % length)
+        #logger.debug('waiting for another %d bytes' % (length - 16))
 
         return length
 
@@ -80,7 +80,7 @@ class Connection(object):
             return response, IntegrityError(response['data'][0]['err'],
                 code=response['data'][0]['code'])
 
-        logger.debug('response: %s' % response)
+        #logger.debug('response: %s' % response)
         return response, None
 
     def _close_stream(self):
