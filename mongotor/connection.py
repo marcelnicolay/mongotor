@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from tornado import iostream
-from tornado.stack_context import StackContext
+from tornado import stack_context
 from mongotor.errors import InterfaceError, IntegrityError, ProgrammingError
 from mongotor import helpers
 import socket
@@ -144,9 +144,9 @@ class Connection(object):
             else:
                 raise InterfaceError('connection is closed and autoreconnect is false')
 
-        self._callback = callback
+        self._callback = stack_context.wrap(callback)
 
-        with StackContext(self.close_on_error):
+        with stack_context.StackContext(self.close_on_error):
             self._send_message(message)
 
     def _send_message(self, message):

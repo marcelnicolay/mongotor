@@ -60,8 +60,8 @@ class ConnectionPool(object):
             self._idle_connections.append(conn)
 
     def __repr__(self):
-        return "ConnectionPool using:{}, idle:{} :::: "\
-            .format(self._connections, len(self._idle_connections))
+        return "ConnectionPool {} using:{}, idle:{} :::: "\
+            .format(id(self), self._connections, len(self._idle_connections))
 
     def _create_connection(self):
         log.debug('{} creating new connection'.format(self))
@@ -103,7 +103,7 @@ class ConnectionPool(object):
     def release(self, conn):
         if self._maxusage and conn.usage > self._maxusage:
             if not conn.closed():
-                log.debug('{} - connection max usage expired, renewing...'.format(self))
+                log.debug('{} {} connection max usage expired, renewing...'.format(self, conn))
                 self._connections -= 1
                 conn.close()
             return
@@ -111,7 +111,7 @@ class ConnectionPool(object):
         self._condition.acquire()
 
         if conn in self._idle_connections:
-            log.debug('{} - connection max usage expired, renewing...'.format(self))
+            log.debug('{} {} called by socket close'.format(self, conn))
             self._condition.release()
             return
 
@@ -122,7 +122,7 @@ class ConnectionPool(object):
             self._connections -= 1
             self._condition.release()
 
-        log.debug('{} release connection'.format(self))
+        log.debug('{} {} release connection'.format(self, conn))
 
     def close(self):
         """Close all connections in the pool."""
