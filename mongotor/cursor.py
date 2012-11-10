@@ -80,15 +80,11 @@ class Cursor(object):
         if response and response.get('cursor_id'):
             cursor_id = response['cursor_id']
 
-            def on_close_cursor(*args, **kw):
-                logger.debug("Cursor {} {} closed cursor: {} {} ".format(id(self), self._query_spec(), cursor_id, kw))
-
-            logger.debug("Cursor {} {} closing cursor: {} ".format(id(self), self._query_spec(), cursor_id))
             if self._connection:
-                self._connection.send_message(message.kill_cursors([cursor_id]), callback=on_close_cursor)
+                self._connection.send_message(message.kill_cursors([cursor_id]), callback=None)
             else:
                 self._database.send_message(message.kill_cursors([cursor_id]),
-                    callback=on_close_cursor)
+                    callback=None)
 
         if error:
             callback((None, error))

@@ -3,6 +3,7 @@ from tornado.ioloop import IOLoop
 from tornado import testing
 from bson import ObjectId
 from mongotor.pool import ConnectionPool
+from mongotor.database import Database
 from mongotor.errors import TooManyConnections
 from mongotor import message
 import sure
@@ -141,3 +142,18 @@ class ConnectionPoolTestCase(testing.AsyncTestCase):
 
         pool._idle_connections.should.have.length_of(0)
         pool._connections.should.be.equal(0)
+
+    def test_check_connections_when_use_cursors(self):
+        """[ConnectionPoolTestCase] - check connections when use cursors"""
+        db = Database.connect('localhost:27027', dbname='test', maxconnections=10, maxusage=29)
+
+        for i in range(2):
+            db.cards.insert({'_id': ObjectId(), 'range': i}, callback=self.stop)
+            self.wait()
+
+        db._nodes[0].pool._connections.should.be.equal(0)
+
+        db.cards.find({}, callback=self.stop)
+        self.wait()
+
+        db._nodes[0].pool._connections.should.be.equal(0)

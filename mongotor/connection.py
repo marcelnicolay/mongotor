@@ -155,4 +155,9 @@ class Connection(object):
         (self.request_id, message) = message
 
         self._stream.write(message)
-        self._stream.read_bytes(16, callback=self._parse_header)
+
+        if self._callback:
+            self._stream.read_bytes(16, callback=self._parse_header)
+        else:
+            self.request_id = None
+            self.release()
