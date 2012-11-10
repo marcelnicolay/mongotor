@@ -18,7 +18,6 @@ import logging
 from datetime import timedelta
 from threading import Condition
 from tornado.ioloop import IOLoop
-from tornado import gen
 from functools import partial
 from mongotor.connection import Connection
 from mongotor.errors import TooManyConnections
@@ -60,8 +59,8 @@ class ConnectionPool(object):
             self._idle_connections.append(conn)
 
     def __repr__(self):
-        return "ConnectionPool {} using:{}, idle:{} :::: "\
-            .format(id(self), self._connections, len(self._idle_connections))
+        return "ConnectionPool {}:{}:{} using:{}, idle:{} :::: "\
+            .format(id(self), self._host, self._port, self._connections, len(self._idle_connections))
 
     def _create_connection(self):
         log.debug('{} creating new connection'.format(self))
@@ -97,7 +96,7 @@ class ConnectionPool(object):
         finally:
             self._condition.release()
 
-        log.debug('{} connection retrieved'.format(self))
+        log.debug('{} {} connection retrieved'.format(self, conn))
         callback(conn)
 
     def release(self, conn):
