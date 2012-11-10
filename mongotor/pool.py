@@ -59,11 +59,11 @@ class ConnectionPool(object):
             self._idle_connections.append(conn)
 
     def __repr__(self):
-        return "ConnectionPool {}:{}:{} using:{}, idle:{} :::: "\
+        return "ConnectionPool {0}:{1}:{2} using:{3}, idle:{4} :::: "\
             .format(id(self), self._host, self._port, self._connections, len(self._idle_connections))
 
     def _create_connection(self):
-        log.debug('{} creating new connection'.format(self))
+        log.debug('{0} creating new connection'.format(self))
         return Connection(host=self._host, port=self._port, pool=self,
             autoreconnect=self._autoreconnect)
 
@@ -83,7 +83,7 @@ class ConnectionPool(object):
                     if retries > 10:
                         raise TooManyConnections()
 
-                    log.warn('{} too many connections, retries {}'.format(self, retries))
+                    log.warn('{0} too many connections, retries {1}'.format(self, retries))
                     retry_connection = partial(self.connection, retries=(retries + 1), callback=callback)
                     IOLoop.instance().add_timeout(timedelta(microseconds=300), retry_connection)
 
@@ -96,13 +96,13 @@ class ConnectionPool(object):
         finally:
             self._condition.release()
 
-        log.debug('{} {} connection retrieved'.format(self, conn))
+        log.debug('{0} {1} connection retrieved'.format(self, conn))
         callback(conn)
 
     def release(self, conn):
         if self._maxusage and conn.usage > self._maxusage:
             if not conn.closed():
-                log.debug('{} {} connection max usage expired, renewing...'.format(self, conn))
+                log.debug('{0} {1} connection max usage expired, renewing...'.format(self, conn))
                 self._connections -= 1
                 conn.close()
             return
@@ -110,7 +110,7 @@ class ConnectionPool(object):
         self._condition.acquire()
 
         if conn in self._idle_connections:
-            log.debug('{} {} called by socket close'.format(self, conn))
+            log.debug('{0} {1} called by socket close'.format(self, conn))
             self._condition.release()
             return
 
@@ -121,11 +121,11 @@ class ConnectionPool(object):
             self._connections -= 1
             self._condition.release()
 
-        log.debug('{} {} release connection'.format(self, conn))
+        log.debug('{0} {1} release connection'.format(self, conn))
 
     def close(self):
         """Close all connections in the pool."""
-        log.debug('{} closing...'.format(self))
+        log.debug('{0} closing...'.format(self))
         self._condition.acquire()
         try:
             while self._idle_connections:  # close all idle connections

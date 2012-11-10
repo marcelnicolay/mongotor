@@ -51,7 +51,7 @@ class Client(object):
         message_insert = message.insert(self._collection_name, doc_or_docs,
             check_keys, safe, {})
 
-        log.debug("mongo: db.{}.insert({})".format(self._collection_name, doc_or_docs))
+        log.debug("mongo: db.{0}.insert({1})".format(self._collection_name, doc_or_docs))
         response, error = yield gen.Task(self._database.send_message,
             message_insert, read_preference=ReadPreference.PRIMARY)
 
@@ -75,7 +75,7 @@ class Client(object):
         message_delete = message.delete(self._collection_name, spec_or_id,
             safe, {})
 
-        log.debug("mongo: db.{}.remove({})".format(self._collection_name, spec_or_id))
+        log.debug("mongo: db.{0}.remove({1})".format(self._collection_name, spec_or_id))
         response, error = yield gen.Task(self._database.send_message,
             message_delete, read_preference=ReadPreference.PRIMARY)
 
@@ -112,7 +112,7 @@ class Client(object):
         message_update = message.update(self._collection_name, upsert,
                 multi, spec, document, safe, {})
 
-        log.debug("mongo: db.{}.update({}, {}, {}, {})".format(
+        log.debug("mongo: db.{0}.update({1}, {2}, {3}, {4})".format(
             self._collection_name, spec, document, upsert, multi))
 
         response, error = yield gen.Task(self._database.send_message,
@@ -188,7 +188,7 @@ class Client(object):
             this query.
         """
 
-        log.debug("mongo: db.{}.find({spec}).limit({limit}).sort({sort})".format(
+        log.debug("mongo: db.{0}.find({spec}).limit({limit}).sort({sort})".format(
             self._collection_name,
             spec=args[0] or {},
             sort=kwargs.get('sort', {}),

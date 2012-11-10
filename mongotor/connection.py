@@ -14,7 +14,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+from __future__ import with_statement
 from tornado import iostream
 from tornado import stack_context
 from mongotor.errors import InterfaceError, IntegrityError, ProgrammingError
@@ -40,7 +40,7 @@ class Connection(object):
 
         self._connect()
 
-        logger.debug('{} created'.format(self))
+        logger.debug('{0} created'.format(self))
 
     def _connect(self):
         self.usage = 0
@@ -57,7 +57,7 @@ class Connection(object):
             raise InterfaceError(error)
 
     def __repr__(self):
-        return "Connection {} ::: ".format(id(self))
+        return "Connection {0} ::: ".format(id(self))
 
     def _parse_header(self, header):
         #logger.debug('got data %r' % header)
@@ -102,7 +102,7 @@ class Connection(object):
         callback((response, None))
 
     def _socket_close(self):
-        logger.debug('{} connection stream closed'.format(self))
+        logger.debug('{0} connection stream closed'.format(self))
         if self._callback:
             self._callback((None, InterfaceError('connection closed')))
 
@@ -111,7 +111,7 @@ class Connection(object):
         self.release()
 
     def close(self):
-        logger.debug('{} connection close'.format(self))
+        logger.debug('{0} connection close'.format(self))
         if self._callback:
             self._callback((None, InterfaceError('connection closed')))
 
@@ -131,7 +131,7 @@ class Connection(object):
         try:
             yield
         except Exception:
-            logger.exception('{} exception in operation'.format(self))
+            logger.exception('{0} exception in operation'.format(self))
             self.close()
 
     def send_message(self, message, callback):

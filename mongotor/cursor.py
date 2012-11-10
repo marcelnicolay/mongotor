@@ -67,14 +67,14 @@ class Cursor(object):
         message_query = message.query(self._query_options(), self._collection_name,
             self._skip, self._limit, self._query_spec(), self._fields)
 
-        logger.debug("Cursor {} {} finding".format(id(self), self._query_spec()))
+        logger.debug("Cursor {0} {1} finding".format(id(self), self._query_spec()))
         if self._connection:
             response, error = yield gen.Task(self._connection.send_message, message_query)
         else:
             response, error = yield gen.Task(self._database.send_message, message_query,
                 read_preference=self._read_preference)
 
-        logger.debug("Cursor {} {} found".format(id(self), self._query_spec()))
+        logger.debug("Cursor {0} {1} found".format(id(self), self._query_spec()))
 
         # close cursor
         if response and response.get('cursor_id'):

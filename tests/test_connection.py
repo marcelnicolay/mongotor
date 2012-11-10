@@ -1,4 +1,5 @@
 # coding: utf-8
+from __future__ import with_statement
 from tornado.ioloop import IOLoop
 from tornado import testing
 from mongotor.connection import Connection
