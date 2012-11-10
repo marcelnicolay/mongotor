@@ -14,7 +14,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+import logging
 from tornado import gen
 from bson import SON
 from mongotor import message
@@ -27,6 +27,8 @@ _QUERY_OPTIONS = {
 
 DESCENDING = -1
 ASCENDING = 1
+
+logger = logging.getLogger(__name__)
 
 
 class Cursor(object):
@@ -65,21 +67,28 @@ class Cursor(object):
         message_query = message.query(self._query_options(), self._collection_name,
             self._skip, self._limit, self._query_spec(), self._fields)
 
+        logger.debug("Cursor {} {} finding".format(id(self), self._query_spec()))
         if self._connection:
             response, error = yield gen.Task(self._connection.send_message, message_query)
         else:
             response, error = yield gen.Task(self._database.send_message, message_query,
                 read_preference=self._read_preference)
 
+        logger.debug("Cursor {} {} found".format(id(self), self._query_spec()))
+
         # close cursor
         if response and response.get('cursor_id'):
             cursor_id = response['cursor_id']
 
+            def on_close_cursor(*args, **kw):
+                logger.debug("Cursor {} {} closed cursor: {} {} ".format(id(self), self._query_spec(), cursor_id, kw))
+
+            logger.debug("Cursor {} {} closing cursor: {} ".format(id(self), self._query_spec(), cursor_id))
             if self._connection:
-                self._connection.send_message(message.kill_cursors([cursor_id]), callback=None)
+                self._connection.send_message(message.kill_cursors([cursor_id]), callback=on_close_cursor)
             else:
                 self._database.send_message(message.kill_cursors([cursor_id]),
-                    callback=None)
+                    callback=on_close_cursor)
 
         if error:
             callback((None, error))
