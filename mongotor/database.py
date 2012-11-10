@@ -160,11 +160,7 @@ class Database(object):
             raise DatabaseError('could not find an available node')
 
         connection = yield gen.Task(node.pool.connection)
-        try:
-            connection.send_message(message, callback=callback)
-        except:
-            connection.close()
-            raise
+        connection.send_message(message, callback=callback)
 
     @connected
     def command(self, command, value=1, read_preference=None,

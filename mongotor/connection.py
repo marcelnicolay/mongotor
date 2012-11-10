@@ -15,12 +15,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from tornado import iostream, gen
-from mongotor.errors import InterfaceError, IntegrityError
+from tornado import iostream
+from tornado.stack_context import StackContext
+from mongotor.errors import InterfaceError, IntegrityError, ProgrammingError
 from mongotor import helpers
 import socket
 import logging
 import struct
+import contextlib
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +36,7 @@ class Connection(object):
         self._autoreconnect = autoreconnect
         self._timeout = timeout
         self._connected = False
+        self._callback = None
 
         self._connect()
 
@@ -56,45 +59,63 @@ class Connection(object):
     def __repr__(self):
         return "Connection {} ::: ".format(id(self))
 
-    def _parse_header(self, header, request_id):
+    def _parse_header(self, header):
         #logger.debug('got data %r' % header)
         length = int(struct.unpack("<i", header[:4])[0])
         _request_id = struct.unpack("<i", header[8:12])[0]
 
-        assert _request_id == request_id, \
-            "ids don't match %r %r" % (request_id, _request_id)
+        assert _request_id == self.request_id, \
+            "ids don't match %r %r" % (self.request_id, _request_id)
 
         operation = 1  # who knows why
         assert operation == struct.unpack("<i", header[12:])[0]
         #logger.debug('%s' % length)
         #logger.debug('waiting for another %d bytes' % (length - 16))
 
-        return length
+        self._stream.read_bytes(length - 16, callback=self._parse_response)
 
-    def _parse_response(self, response, request_id):
+    def _parse_response(self, response):
+        callback = self._callback
+        request_id = self.request_id
+
+        self.request_id = None
+        self._callback = None
+
+        self.release()
+
         try:
             response = helpers._unpack_response(response, request_id)
         except Exception, e:
             logger.error('error %s' % e)
-            return None, e
+            callback((None, e))
+            return
 
         if response and response['data'] and response['data'][0].get('err') \
             and response['data'][0].get('code'):
 
             logger.error(response['data'][0]['err'])
-            return response, IntegrityError(response['data'][0]['err'],
-                code=response['data'][0]['code'])
+            callback((response, IntegrityError(response['data'][0]['err'],
+                code=response['data'][0]['code'])))
+            return
 
         #logger.debug('response: %s' % response)
-        return response, None
+        callback((response, None))
 
     def _socket_close(self):
         logger.debug('{} connection stream closed'.format(self))
+        if self._callback:
+            self._callback((None, InterfaceError('connection closed')))
+
+        self._callback = None
         self._connected = False
         self.release()
 
     def close(self):
         logger.debug('{} connection close'.format(self))
+        if self._callback:
+            self._callback((None, InterfaceError('connection closed')))
+
+        self._callback = None
         self._connected = False
         self._stream.close()
 
@@ -105,41 +126,33 @@ class Connection(object):
         if self._pool:
             self._pool.release(self)
 
-    @gen.engine
-    def send_message(self, message, callback):
+    @contextlib.contextmanager
+    def close_on_error(self):
         try:
-            if self.closed():
-                if self._autoreconnect:
-                    self._connect()
-                else:
-                    raise InterfaceError('connection is closed and autoreconnect is false')
+            yield
+        except Exception:
+            logger.exception('{} exception in operation'.format(self))
+            self.close()
 
-            response = yield gen.Task(self._send_message, message)
-            callback(response)
-        except IOError:
-            logger.exception('{} problems sending message'.format(self))
-            callback((None, InterfaceError('connection closed')))
-        finally:
-            self.release()
+    def send_message(self, message, callback):
+        if self._callback is not None:
+            raise ProgrammingError('connection already in use')
 
-    @gen.engine
-    def _send_message(self, message, callback=None):
+        if self.closed():
+            if self._autoreconnect:
+                self._connect()
+            else:
+                raise InterfaceError('connection is closed and autoreconnect is false')
+
+        self._callback = callback
+
+        with StackContext(self.close_on_error):
+            self._send_message(message)
+
+    def _send_message(self, message):
         self.usage += 1
 
         (self.request_id, message) = message
-        try:
-            self._stream.write(message)
 
-            header_data = yield gen.Task(self._stream.read_bytes, 16)
-            length = self._parse_header(header_data, self.request_id)
-
-            data = yield gen.Task(self._stream.read_bytes, length - 16)
-
-            response, error = self._parse_response(data, self.request_id)
-
-            if callback:
-                callback((response, error))
-
-        except IOError, e:
-            self._connected = False
-            raise e
+        self._stream.write(message)
+        self._stream.read_bytes(16, callback=self._parse_header)

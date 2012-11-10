@@ -4,7 +4,6 @@ from tornado import testing
 from bson import ObjectId
 from mongotor.errors import DatabaseError
 from mongotor.database import Database
-from mongotor.client import Client
 from mongotor.node import ReadPreference
 import sure
 import os
@@ -43,15 +42,16 @@ class ReplicaSetTestCase(testing.AsyncTestCase):
         os.system('make mongo-start-node1')
         os.system('make mongo-start-arbiter')
 
-        time.sleep(2)
-
-        Database.connect(["localhost:27027", "localhost:27028"], dbname='test')
-        Database().send_message.when.called_with('',
-            read_preference=ReadPreference.SECONDARY)\
-            .throw(DatabaseError)
-
-        os.system('make mongo-start-node2')
         time.sleep(10)
+
+        try:
+            Database.connect(["localhost:27027", "localhost:27028"], dbname='test')
+            Database().send_message.when.called_with((None, ''),
+                read_preference=ReadPreference.SECONDARY)\
+                .throw(DatabaseError)
+        finally:
+            os.system('make mongo-start-node2')
+            time.sleep(10)
 
 
 class SecondaryPreferredTestCase(testing.AsyncTestCase):
