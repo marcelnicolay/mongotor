@@ -84,6 +84,11 @@ class Node(object):
             .format(host=self.host, port=self.port, primary=self.is_primary,
                 secondary=self.is_secondary)
 
+    def connection(self, callback):
+        """Return one connection from pool
+        """
+        self.pool.connection(callback)
+
 
 class ReadPreference(object):
     """Defines the read preferences supported by mongotor.

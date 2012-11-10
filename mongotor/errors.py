@@ -44,3 +44,23 @@ class IntegrityError(DatabaseError):
 
 class ProgrammingError(DatabaseError):
     pass
+
+
+class OperationFailure(Error):
+    """Raised when a database operation fails.
+
+    """
+
+    def __init__(self, error, code=None):
+        self.code = code
+        Error.__init__(self, error)
+
+
+class TimeoutError(OperationFailure):
+    """Raised when a database operation times out.
+    """
+
+
+class DuplicateKeyError(OperationFailure):
+    """Raised when a safe insert or update fails due to a duplicate key error.
+    """

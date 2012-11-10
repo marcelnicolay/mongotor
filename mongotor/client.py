@@ -52,8 +52,12 @@ class Client(object):
             check_keys, safe, {})
 
         log.debug("mongo: db.{0}.insert({1})".format(self._collection_name, doc_or_docs))
-        response, error = yield gen.Task(self._database.send_message,
-            message_insert, read_preference=ReadPreference.PRIMARY)
+
+        node = self._database.get_node(ReadPreference.PRIMARY)
+        connection = yield gen.Task(node.connection)
+
+        response, error = yield gen.Task(connection.send_message,
+            message_insert, safe)
 
         if callback:
             callback((response, error))
@@ -76,8 +80,11 @@ class Client(object):
             safe, {})
 
         log.debug("mongo: db.{0}.remove({1})".format(self._collection_name, spec_or_id))
-        response, error = yield gen.Task(self._database.send_message,
-            message_delete, read_preference=ReadPreference.PRIMARY)
+        node = self._database.get_node(ReadPreference.PRIMARY)
+        connection = yield gen.Task(node.connection)
+
+        response, error = yield gen.Task(connection.send_message,
+            message_delete, safe)
 
         if callback:
             callback((response, error))
@@ -115,8 +122,11 @@ class Client(object):
         log.debug("mongo: db.{0}.update({1}, {2}, {3}, {4})".format(
             self._collection_name, spec, document, upsert, multi))
 
-        response, error = yield gen.Task(self._database.send_message,
-            message_update, read_preference=ReadPreference.PRIMARY)
+        node = self._database.get_node(ReadPreference.PRIMARY)
+        connection = yield gen.Task(node.connection)
+
+        response, error = yield gen.Task(connection.send_message,
+            message_update, safe)
 
         callback((response, error))
 

@@ -4,6 +4,7 @@ from tornado import testing
 from mongotor.database import Database
 from mongotor.errors import DatabaseError
 from mongotor import message
+from mongotor import helpers
 from bson.objectid import ObjectId
 import sure
 import fudge
@@ -42,7 +43,8 @@ class DatabaseTestCase(testing.AsyncTestCase):
             {'driverOIDTest': object_id})
 
         Database().send_message(message_test, callback=self.stop)
-        response, error = self.wait()
+        response, _ = self.wait()
+        response = helpers._unpack_response(response)
 
         result = response['data'][0]
 

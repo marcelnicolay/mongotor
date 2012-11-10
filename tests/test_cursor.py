@@ -5,6 +5,7 @@ from bson.objectid import ObjectId
 from mongotor import message
 from mongotor.cursor import Cursor, DESCENDING, ASCENDING
 from mongotor.database import Database
+from mongotor.node import ReadPreference
 import sure
 
 
@@ -23,7 +24,12 @@ class CursorTestCase(testing.AsyncTestCase):
         # delete all documents
         message_delete = message.delete('mongotor_test.cursor_test',
             {}, True, {})
-        Database().send_message(message_delete, callback=self.stop)
+
+        node = Database().get_node(ReadPreference.PRIMARY)
+        node.connection(self.stop)
+        connection = self.wait()
+
+        connection.send_message(message_delete, with_last_error=True, callback=self.stop)
         self.wait()
 
         Database.disconnect()
@@ -31,7 +37,12 @@ class CursorTestCase(testing.AsyncTestCase):
     def _insert_document(self, document):
         message_insert = message.insert('mongotor_test.cursor_test', [document],
             True, True, {})
-        Database().send_message(message_insert, callback=self.stop)
+
+        node = Database().get_node(ReadPreference.PRIMARY)
+        node.connection(self.stop)
+        connection = self.wait()
+
+        connection.send_message(message_insert, with_last_error=True, callback=self.stop)
         self.wait()
 
     def test_find_document_whitout_spec(self):

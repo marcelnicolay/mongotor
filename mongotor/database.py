@@ -151,7 +151,19 @@ class Database(object):
 
     @gen.engine
     @connected
-    def send_message(self, message, read_preference=None, callback=None):
+    def send_message(self, message, read_preference=None,
+        with_response=True, callback=None):
+        node = self.get_node(read_preference)
+
+        connection = yield gen.Task(node.connection)
+
+        if with_response:
+            connection.send_message_with_response(message, callback=callback)
+        else:
+            connection.send_message(message, callback=callback)
+
+    @connected
+    def get_node(self, read_preference=None):
         if read_preference is None:
             read_preference = self._read_preference
 
@@ -159,8 +171,7 @@ class Database(object):
         if not node:
             raise DatabaseError('could not find an available node')
 
-        connection = yield gen.Task(node.pool.connection)
-        connection.send_message(message, callback=callback)
+        return node
 
     @connected
     def command(self, command, value=1, read_preference=None,

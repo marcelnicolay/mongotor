@@ -18,6 +18,7 @@ import logging
 from tornado import gen
 from bson import SON
 from mongotor import message
+from mongotor import helpers
 
 _QUERY_OPTIONS = {
     "tailable_cursor": 2,
@@ -67,32 +68,25 @@ class Cursor(object):
         message_query = message.query(self._query_options(), self._collection_name,
             self._skip, self._limit, self._query_spec(), self._fields)
 
-        logger.debug("Cursor {0} {1} finding".format(id(self), self._query_spec()))
-        if self._connection:
-            response, error = yield gen.Task(self._connection.send_message, message_query)
+        if not self._connection:
+            node = self._database.get_node(self._read_preference)
+            connection = yield gen.Task(node.connection)
         else:
-            response, error = yield gen.Task(self._database.send_message, message_query,
-                read_preference=self._read_preference)
+            connection = self._connection
 
-        logger.debug("Cursor {0} {1} found".format(id(self), self._query_spec()))
+        response, _ = yield gen.Task(connection.send_message_with_response, message_query)
+        response = helpers._unpack_response(response)
 
         # close cursor
         if response and response.get('cursor_id'):
             cursor_id = response['cursor_id']
 
-            if self._connection:
-                self._connection.send_message(message.kill_cursors([cursor_id]), callback=None)
-            else:
-                self._database.send_message(message.kill_cursors([cursor_id]),
-                    callback=None)
+            connection.send_message(message.kill_cursors([cursor_id]), callback=None)
 
-        if error:
-            callback((None, error))
+        if self._limit == -1 and len(response['data']) == 1:
+            callback((response['data'][0], None))
         else:
-            if self._limit == -1 and len(response['data']) == 1:
-                callback((response['data'][0], None))
-            else:
-                callback((response['data'], None))
+            callback((response['data'], None))
 
     @gen.engine
     def count(self, callback):

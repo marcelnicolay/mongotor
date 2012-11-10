@@ -15,9 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import with_statement
+from functools import partial
 from tornado import iostream
 from tornado import stack_context
-from mongotor.errors import InterfaceError, IntegrityError, ProgrammingError
+from mongotor.errors import (InterfaceError,
+    IntegrityError, ProgrammingError, DuplicateKeyError,
+    OperationFailure)
 from mongotor import helpers
 import socket
 import logging
@@ -64,8 +67,8 @@ class Connection(object):
         length = int(struct.unpack("<i", header[:4])[0])
         _request_id = struct.unpack("<i", header[8:12])[0]
 
-        assert _request_id == self.request_id, \
-            "ids don't match %r %r" % (self.request_id, _request_id)
+        assert _request_id == self._request_id, \
+            "ids don't match %r %r" % (self._request_id, _request_id)
 
         operation = 1  # who knows why
         assert operation == struct.unpack("<i", header[12:])[0]
@@ -76,37 +79,61 @@ class Connection(object):
 
     def _parse_response(self, response):
         callback = self._callback
-        request_id = self.request_id
+        check_response = self._check_response
 
-        self.request_id = None
-        self._callback = None
-
+        self.reset()
         self.release()
 
-        try:
-            response = helpers._unpack_response(response, request_id)
-        except Exception, e:
-            logger.error('error %s' % e)
-            callback((None, e))
-            return
-
-        if response and response['data'] and response['data'][0].get('err') \
-            and response['data'][0].get('code'):
-
-            logger.error(response['data'][0]['err'])
-            callback((response, IntegrityError(response['data'][0]['err'],
-                code=response['data'][0]['code'])))
-            return
+        if check_response:
+            try:
+                response = self.__check_response_to_last_error(response)
+            except OperationFailure, e:
+                callback((response, e))
+                return
 
         #logger.debug('response: %s' % response)
         callback((response, None))
+
+    def __check_response_to_last_error(self, response):
+        """Check a response to a lastError message for errors.
+
+        `response` is a byte string representing a response to the message.
+        If it represents an error response we raise OperationFailure.
+
+        Return the response as a document.
+        """
+        response = helpers._unpack_response(response)
+        assert response["number_returned"] == 1
+        error = response["data"][0]
+
+        helpers._check_command_response(error)
+        error_msg = error.get("err", "")
+        if error_msg is None:
+            return error
+
+        details = error
+        # mongos returns the error code in an error object
+        # for some errors.
+        if "errObjects" in error:
+            for errobj in error["errObjects"]:
+                if errobj["err"] == error_msg:
+                    details = errobj
+                    break
+
+        if "code" in details:
+            if details["code"] in [11000, 11001, 12582]:
+                raise DuplicateKeyError(details["err"])
+            else:
+                raise OperationFailure(details["err"], details["code"])
+        else:
+            raise OperationFailure(details["err"])
 
     def _socket_close(self):
         logger.debug('{0} connection stream closed'.format(self))
         if self._callback:
             self._callback((None, InterfaceError('connection closed')))
 
-        self._callback = None
+        self.reset()
         self._connected = False
         self.release()
 
@@ -115,7 +142,7 @@ class Connection(object):
         if self._callback:
             self._callback((None, InterfaceError('connection closed')))
 
-        self._callback = None
+        self.reset()
         self._connected = False
         self._stream.close()
 
@@ -126,6 +153,11 @@ class Connection(object):
         if self._pool:
             self._pool.release(self)
 
+    def reset(self):
+        self._callback = None
+        self._request_id = None
+        self._check_response = False
+
     @contextlib.contextmanager
     def close_on_error(self):
         try:
@@ -134,7 +166,20 @@ class Connection(object):
             logger.exception('{0} exception in operation'.format(self))
             self.close()
 
-    def send_message(self, message, callback):
+    def send_message(self, message, with_last_error=False, callback=None):
+        """Say something to Mongo.
+
+        Raises ConnectionFailure if the message cannot be sent. Raises
+        OperationFailure if `with_last_error` is ``True`` and the
+        response to the getLastError call returns an error. Return the
+        response from lastError, or ``None`` if `with_last_error`
+        is ``False``.
+
+        :Parameters:
+          - `message`: message to send
+          - `with_last_error`: check getLastError status after sending the
+            message
+        """
         if self._callback is not None:
             raise ProgrammingError('connection already in use')
 
@@ -145,19 +190,55 @@ class Connection(object):
                 raise InterfaceError('connection is closed and autoreconnect is false')
 
         self._callback = stack_context.wrap(callback)
+        self._check_response = with_last_error
 
         with stack_context.StackContext(self.close_on_error):
-            self._send_message(message)
+            self.__send_message(message, with_last_error=with_last_error)
 
-    def _send_message(self, message):
+    def __send_message(self, message, with_last_error=False):
         self.usage += 1
 
-        (self.request_id, message) = message
+        (self._request_id, message) = message
 
         self._stream.write(message)
 
-        if self._callback:
+        if with_last_error:
             self._stream.read_bytes(16, callback=self._parse_header)
-        else:
-            self.request_id = None
-            self.release()
+            return
+
+        self.reset()
+        self.release()
+
+        if self._callback:
+            self._callback()
+
+    def send_message_with_response(self, message, callback):
+        """Send a message to Mongo and return the response.
+
+        Sends the given message and returns the response.
+
+        :Parameters:
+          - `message`: (request_id, data) pair making up the message to send
+        """
+        if self._callback is not None:
+            raise ProgrammingError('connection already in use')
+
+        if self.closed():
+            if self._autoreconnect:
+                self._connect()
+            else:
+                raise InterfaceError('connection is closed and autoreconnect is false')
+
+        self._callback = stack_context.wrap(callback)
+        self._check_response = False
+
+        with stack_context.StackContext(self.close_on_error):
+            self.__send_message_and_receive(message)
+
+    def __send_message_and_receive(self, message):
+        self.usage += 1
+
+        (self._request_id, message) = message
+
+        self._stream.write(message)
+        self._stream.read_bytes(16, callback=self._parse_header)

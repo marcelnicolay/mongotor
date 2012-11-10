@@ -27,7 +27,7 @@ class ClientTestCase(testing.AsyncTestCase):
         db.collection_test.insert(document, callback=self.stop)
         response, error = self.wait()
 
-        response['data'][0]['ok'].should.be.equal(1.0)
+        response['ok'].should.be.equal(1.0)
         error.should.be.none
 
     def test_insert_a_document_list(self):
@@ -42,7 +42,7 @@ class ClientTestCase(testing.AsyncTestCase):
         db.collection_test.insert(documents, callback=self.stop)
         response, error = self.wait()
 
-        response['data'][0]['ok'].should.be.equal(1.0)
+        response['ok'].should.be.equal(1.0)
         error.should.be.none
 
     def test_remove_document_by_id(self):
@@ -59,7 +59,7 @@ class ClientTestCase(testing.AsyncTestCase):
         db.collection_test.remove(documents[0]['_id'], callback=self.stop)
         response, error = self.wait()
 
-        response['data'][0]['ok'].should.be.equal(1.0)
+        response['ok'].should.be.equal(1.0)
         error.should.be.none
 
     def test_remove_document_by_spec(self):
@@ -76,7 +76,7 @@ class ClientTestCase(testing.AsyncTestCase):
         db.collection_test.remove({'name': 'shouldbename'}, callback=self.stop)
         response, error = self.wait()
 
-        response['data'][0]['ok'].should.be.equal(1.0)
+        response['ok'].should.be.equal(1.0)
         error.should.be.none
 
     def test_update_document(self):
@@ -94,7 +94,7 @@ class ClientTestCase(testing.AsyncTestCase):
             'should be a new name'}}, callback=self.stop)
         response, error = self.wait()
 
-        response['data'][0]['ok'].should.be.equal(1.0)
+        response['ok'].should.be.equal(1.0)
         error.should.be.none
 
     def test_find_document(self):

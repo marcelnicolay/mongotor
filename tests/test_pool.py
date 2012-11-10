@@ -87,7 +87,7 @@ class ConnectionPoolTestCase(testing.AsyncTestCase):
             pool.connection(self.stop)
             connection = self.wait()
 
-            connection.send_message(message_test, callback=self.stop)
+            connection.send_message_with_response(message_test, callback=self.stop)
             self.wait()
 
         pool.connection(self.stop)
@@ -95,7 +95,7 @@ class ConnectionPoolTestCase(testing.AsyncTestCase):
 
         new_connection.usage.should.be.equal(0)
         new_connection.should_not.be.equal(connection)
-        new_connection.send_message(message_test, callback=self.stop)
+        new_connection.send_message_with_response(message_test, callback=self.stop)
 
         self.wait()
 
@@ -112,7 +112,7 @@ class ConnectionPoolTestCase(testing.AsyncTestCase):
             pool.connection(self.stop)
             connection = self.wait()
 
-            connection.send_message(message_test, callback=self.stop)
+            connection.send_message_with_response(message_test, callback=self.stop)
             self.wait()
 
         pool._idle_connections.should.have.length_of(0)
@@ -121,7 +121,7 @@ class ConnectionPoolTestCase(testing.AsyncTestCase):
             pool.connection(self.stop)
             connection = self.wait()
 
-            connection.send_message(message_test, callback=self.stop)
+            connection.send_message_with_response(message_test, callback=self.stop)
             self.wait()
 
         pool._idle_connections.should.have.length_of(0)
@@ -137,7 +137,7 @@ class ConnectionPoolTestCase(testing.AsyncTestCase):
             pool.connection(self.stop)
             connection = self.wait()
 
-            connection.send_message(message_test, callback=self.stop)
+            connection.send_message_with_response(message_test, callback=self.stop)
             self.wait()
 
         pool._idle_connections.should.have.length_of(0)
