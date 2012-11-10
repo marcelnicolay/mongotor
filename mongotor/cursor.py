@@ -113,6 +113,30 @@ class Cursor(object):
 
         callback(total)
 
+    @gen.engine
+    def distinct(self, key, callback):
+        """Get a list of distinct values for `key` among all documents
+        in the result set of this query.
+
+        :Parameters:
+          - `key`: name of key for which we want to get the distinct values
+        """
+        if not isinstance(key, basestring):
+            raise TypeError("key must be an instance "
+                            "of %s" % (basestring.__name__,))
+
+        command = SON({
+            "distinct": self._collection,
+        })
+
+        command.update({"key": key})
+        if self._spec:
+            command.update({"query": self._spec})
+
+        response, error = yield gen.Task(self._database.command, command)
+
+        callback(response['values'])
+
     def _query_options(self):
         """Get the query options string to use for this query."""
         options = 0
