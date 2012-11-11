@@ -24,6 +24,10 @@ class InterfaceError(Error):
     pass
 
 
+class TooManyConnections(InterfaceError):
+    pass
+
+
 class InvalidOperationError(Error):
     pass
 
@@ -36,3 +40,7 @@ class IntegrityError(DatabaseError):
     def __init__(self, msg, code=None):
         self.code = code
         self.msg = msg
+
+
+class ProgrammingError(DatabaseError):
+    pass

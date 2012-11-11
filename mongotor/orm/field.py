@@ -21,6 +21,7 @@ import decimal
 from datetime import datetime
 from bson import ObjectId
 
+
 class Field(object):
 
     def __init__(self, default=None, name=None, field_type=None):
@@ -41,7 +42,7 @@ class Field(object):
 
     def __set__(self, instance, value):
         value = self._validate(value)
-        if self.name in instance._data and instance._data[self.name] != value:
+        if self.name not in instance._data or instance._data[self.name] != value:
             instance._dirty.add(self.name)
         instance._data[self.name] = value
 
@@ -105,12 +106,12 @@ class EmailField(StringField):
 
 
 class NumberField(Field):
-    
+
     def __init__(self, field_type, min_value=None, max_value=None,
                  *args, **kwargs):
         self.min_value = min_value
         self.max_value = max_value
-        super(NumberField, self).__init__(field_type=field_type, 
+        super(NumberField, self).__init__(field_type=field_type,
             *args, **kwargs)
 
     def _validate(self, value):

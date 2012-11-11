@@ -106,6 +106,8 @@ class Database(object):
         for node in self._nodes:
             node.config(callback)
 
+        IOLoop.instance().add_timeout(timedelta(seconds=30), self._config_nodes)
+
     @classmethod
     def connect(cls, addresses, dbname, read_preference=None, **kwargs):
         """Connect to database
@@ -158,11 +160,7 @@ class Database(object):
             raise DatabaseError('could not find an available node')
 
         connection = yield gen.Task(node.pool.connection)
-        try:
-            connection.send_message(message, callback=callback)
-        except:
-            connection.close()
-            raise
+        connection.send_message(message, callback=callback)
 
     @connected
     def command(self, command, value=1, read_preference=None,

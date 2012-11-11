@@ -51,7 +51,7 @@ class Client(object):
         message_insert = message.insert(self._collection_name, doc_or_docs,
             check_keys, safe, {})
 
-        log.debug("mongo: db.{}.insert({})".format(self._collection_name, doc_or_docs))
+        log.debug("mongo: db.{0}.insert({1})".format(self._collection_name, doc_or_docs))
         response, error = yield gen.Task(self._database.send_message,
             message_insert, read_preference=ReadPreference.PRIMARY)
 
@@ -75,7 +75,7 @@ class Client(object):
         message_delete = message.delete(self._collection_name, spec_or_id,
             safe, {})
 
-        log.debug("mongo: db.{}.remove({})".format(self._collection_name, spec_or_id))
+        log.debug("mongo: db.{0}.remove({1})".format(self._collection_name, spec_or_id))
         response, error = yield gen.Task(self._database.send_message,
             message_delete, read_preference=ReadPreference.PRIMARY)
 
@@ -112,7 +112,7 @@ class Client(object):
         message_update = message.update(self._collection_name, upsert,
                 multi, spec, document, safe, {})
 
-        log.debug("mongo: db.{}.update({}, {}, {}, {})".format(
+        log.debug("mongo: db.{0}.update({1}, {2}, {3}, {4})".format(
             self._collection_name, spec, document, upsert, multi))
 
         response, error = yield gen.Task(self._database.send_message,
@@ -143,7 +143,6 @@ class Client(object):
 
         self.find(spec_or_id, limit=-1, **kwargs)
 
-    @gen.engine
     def find(self, *args, **kwargs):
         """Query the database.
 
@@ -188,15 +187,17 @@ class Client(object):
           - `read_preferences` (optional): The read preference for
             this query.
         """
-        callback = kwargs['callback']
-        del kwargs['callback']
 
-        log.debug("mongo: db.{}.find({spec}).limit({limit}).sort({sort})".format(
+        log.debug("mongo: db.{0}.find({spec}).limit({limit}).sort({sort})".format(
             self._collection_name,
-            spec=kwargs.get('spec', {}),
+            spec=args[0] or {},
             sort=kwargs.get('sort', {}),
             limit=kwargs.get('limit', '')
         ))
         cursor = Cursor(database=self._database, collection=self._collection,
             *args, **kwargs)
-        cursor.find(callback=callback)
+
+        if 'callback' in kwargs:
+            cursor.find(callback=kwargs['callback'])
+        else:
+            return cursor

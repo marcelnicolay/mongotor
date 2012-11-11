@@ -50,34 +50,6 @@ class DatabaseTestCase(testing.AsyncTestCase):
         result['ok'].should.be(1.0)
         result['str'].should.be(str(object_id))
 
-    @fudge.patch('mongotor.database.Node')
-    def test_raises_error_when_cant_send_message(self, fake_node):
-        """[DatabaseTestCase] - Raises error when cant send message"""
-
-        fake_connection = fudge.Fake('connection')
-        fake_connection.expects('send_message').raises(
-            ValueError('shoud not be send message'))
-        fake_connection.expects('close')
-
-        fake_pool = fudge.Fake('pool')
-        fake_node_instace = fake_node.is_callable().returns_fake() \
-            .has_attr(pool=fake_pool)
-
-        def config(callback):
-            fake_node_instace.initialized = True
-            fake_node_instace.available = True
-            fake_node_instace.is_primary = True
-            callback()
-
-        fake_node_instace.expects('config').calls(config)
-
-        fake_pool.expects('connection') \
-            .calls(lambda callback: callback(fake_connection))
-
-        database = Database.connect(["localhost:27027"], dbname='test')
-        database.send_message.when.called_with("", callback=None) \
-            .throw(ValueError, 'shoud not be send message')
-
     def test_disconnect_database(self):
         """[DatabaseTestCase] - Disconnect the database"""
         Database.connect(["localhost:27027"], dbname='test')

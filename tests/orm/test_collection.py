@@ -200,6 +200,25 @@ class CollectionTestCase(testing.AsyncTestCase):
         "string_attr".should.be.within(doc_test.dirty_fields)
         "_id".shouldnot.be.within(doc_test.dirty_fields)
 
+    def test_update_tracks_changed_object_attrs(self):
+        """[CollectionTestCase] - Update a document and track dirty object fields"""
+        class CollectionTest(Collection):
+            __collection__ = "collection_test"
+            _id = ObjectIdField()
+            string_attr = StringField()
+            object_field = ObjectField()
+
+        doc_test = CollectionTest()
+        doc_test._id = ObjectId()
+        doc_test.string_attr = "should be string value"
+
+        doc_test.save(callback=self.stop)
+        self.wait()
+
+        doc_test.object_field = {'name': 'should be a new'}
+        "object_field".should.be.within(doc_test.dirty_fields)
+        "_id".shouldnot.be.within(doc_test.dirty_fields)
+
     def test_load_obj_does_not_set_dirty_keys(self):
         """[CollectionTestCase] - Check if freshly loaded document has no dirty fields"""
         class CollectionTest(Collection):
@@ -230,10 +249,13 @@ class CollectionTestCase(testing.AsyncTestCase):
         doc_test.save(callback=self.stop)
 
         doc_test.string_attr = "changed"
+
         doc_test.update(callback=self.stop, force=True)
         self.wait()
+
         CollectionTest.objects.find_one(query=doc_test._id, callback=self.stop)
         db_doc_test = self.wait()
+
         db_doc_test.string_attr.should.be.equal("changed")
 
     def test_empty_callback(self):

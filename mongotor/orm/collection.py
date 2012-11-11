@@ -107,8 +107,11 @@ class Collection(object):
     def dirty_fields(self):
         return list(self._dirty)
 
+    def clean_fields(self):
+        self._dirty = set()
+
     @classmethod
-    def create(cls, dictionary):
+    def create(cls, dictionary, cleaned=False):
         """Create a new instance of collection from a dictionary
 
         For example, creating a new instance from a mapped collection
@@ -123,6 +126,9 @@ class Collection(object):
                 setattr(instance, str(key), value)
             except TypeError, e:
                 logger.warn(e)
+
+        if cleaned:
+            instance.clean_fields()
 
         return instance
 
@@ -146,6 +152,8 @@ class Collection(object):
         client = Client(Database(), self.__collection__)
         response, error = yield gen.Task(client.insert, self.as_dict(),
             safe=safe, check_keys=check_keys)
+
+        self.clean_fields()
 
         post_save.send(instance=self)
 
@@ -197,6 +205,8 @@ class Collection(object):
 
         response, error = yield gen.Task(client.update, spec, document,
             upsert=upsert, safe=safe, multi=multi)
+
+        self.clean_fields()
 
         post_update.send(instance=self)
 

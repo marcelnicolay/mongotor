@@ -5,9 +5,10 @@ from mongotor.orm import signal
 from mongotor.database import Database
 from mongotor.orm.collection import Collection
 from mongotor.orm.field import StringField, ObjectId, ObjectIdField
+from tests.util import unittest
 
 
-class SignalTestCase(testing.AsyncTestCase):
+class SignalTestCase(testing.AsyncTestCase, unittest.TestCase):
 
     def get_new_ioloop(self):
         return IOLoop.instance()

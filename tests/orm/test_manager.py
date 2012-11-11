@@ -5,6 +5,7 @@ from bson import ObjectId
 from mongotor.orm.field import (ObjectIdField, StringField)
 from mongotor.orm.collection import Collection
 from mongotor.database import Database
+from tests.util import unittest
 
 
 class CollectionTest(Collection):
@@ -14,7 +15,7 @@ class CollectionTest(Collection):
     string_attr = StringField()
 
 
-class ManagerTestCase(testing.AsyncTestCase):
+class ManagerTestCase(testing.AsyncTestCase, unittest.TestCase):
 
     def setUp(self):
         super(ManagerTestCase, self).setUp()

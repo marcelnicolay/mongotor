@@ -20,6 +20,7 @@ import random
 from tornado import gen
 from bson import SON
 from mongotor.pool import ConnectionPool
+from mongotor.connection import Connection
 from mongotor.errors import InterfaceError
 
 logger = logging.getLogger(__name__)
@@ -55,9 +56,10 @@ class Node(object):
 
         response = None
         try:
-            connection = yield gen.Task(self.pool.connection)
+            connection = Connection(host=self.host, port=self.port)
             response, error = yield gen.Task(self.database._command, ismaster,
                 connection=connection)
+            connection.close()
         except InterfaceError, ie:
             logger.error('oops, database node {host}:{port} is unavailable: {error}' \
                 .format(host=self.host, port=self.port, error=ie))

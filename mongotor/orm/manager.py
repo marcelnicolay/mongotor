@@ -33,7 +33,7 @@ class Manager(object):
 
         instance = None
         if result:
-            instance = self.collection.create(result)
+            instance = self.collection.create(result, cleaned=True)
 
         callback(instance)
 
@@ -46,44 +46,18 @@ class Manager(object):
 
         if result:
             for item in result:
-                items.append(self.collection.create(item))
+                items.append(self.collection.create(item, cleaned=True))
 
         callback(items)
 
-    @gen.engine
     def count(self, query=None, callback=None):
-        command = SON({
-            "count": self.collection.__collection__
-        })
-
-        if query:
-            command.update({'query': query})
-
-        result, error = yield gen.Task(Database().command, command)
-
-        total = 0
-        if result and len(result) > 0 and 'n' in result:
-            total = int(result['n'])
-
-        callback(total)
+        client = Client(Database(), self.collection.__collection__)
+        client.find(query).count(callback=callback)
 
     @gen.engine
     def distinct(self, key, callback, query=None):
-        """Returns a list of distinct values for the given
-        key across collection"""
-        command = SON({
-            "distinct": self.collection.__collection__,
-            "key": key,
-        })
-        if query:
-            command.update({'query': query})
-
-        result, error = yield gen.Task(Database().command, command)
-
-        if result and result['ok']:
-            callback(result['values'])
-        else:
-            callback(None)
+        client = Client(Database(), self.collection.__collection__)
+        client.find(query).distinct(key, callback=callback)
 
     @gen.engine
     def sum(self, query, field, callback):
@@ -133,7 +107,7 @@ class Manager(object):
 
         if result and result['ok']:
             for item in result['results']:
-                items.append(self.collection.create(item['obj']))
+                items.append(self.collection.create(item['obj'], cleaned=True))
 
         callback(items)
 

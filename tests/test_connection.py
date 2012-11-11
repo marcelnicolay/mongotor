@@ -1,4 +1,5 @@
 # coding: utf-8
+from __future__ import with_statement
 from tornado.ioloop import IOLoop
 from tornado import testing
 from mongotor.connection import Connection
@@ -97,6 +98,9 @@ class ConnectionTestCase(testing.AsyncTestCase):
         """[ConnectionTestCase] - Reconnect to mongo when connection was lost"""
 
         self.conn.close()
+        self.conn._callback = self.stop
+        self.wait()
+
         self.test_send_test_message_to_mongo()
 
     def test_raises_interface_error_when_cant_reconnect(self):

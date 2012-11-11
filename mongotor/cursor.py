@@ -14,7 +14,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+import logging
 from tornado import gen
 from bson import SON
 from mongotor import message
@@ -28,6 +28,8 @@ _QUERY_OPTIONS = {
 DESCENDING = -1
 ASCENDING = 1
 
+logger = logging.getLogger(__name__)
+
 
 class Cursor(object):
     """A cursor / iterator over Mongo query results.
@@ -36,7 +38,7 @@ class Cursor(object):
     def __init__(self, spec_or_id=None, collection=None, database=None, fields=None, snapshot=False,
         tailable=False, max_scan=None, is_command=False, explain=False, hint=None,
         skip=0, limit=0, sort=None, connection=None,
-        read_preference=None, timeout=True, slave_okay=True):
+        read_preference=None, timeout=True, slave_okay=True, **kw):
 
         if spec_or_id is not None and not isinstance(spec_or_id, dict):
             spec_or_id = {"_id": spec_or_id}
@@ -65,11 +67,14 @@ class Cursor(object):
         message_query = message.query(self._query_options(), self._collection_name,
             self._skip, self._limit, self._query_spec(), self._fields)
 
+        logger.debug("Cursor {0} {1} finding".format(id(self), self._query_spec()))
         if self._connection:
             response, error = yield gen.Task(self._connection.send_message, message_query)
         else:
             response, error = yield gen.Task(self._database.send_message, message_query,
                 read_preference=self._read_preference)
+
+        logger.debug("Cursor {0} {1} found".format(id(self), self._query_spec()))
 
         # close cursor
         if response and response.get('cursor_id'):
@@ -88,6 +93,49 @@ class Cursor(object):
                 callback((response['data'][0], None))
             else:
                 callback((response['data'], None))
+
+    @gen.engine
+    def count(self, callback):
+        """Get the size of the results set for this query.
+
+        Returns the number of documents in the results set for this query. Does
+        """
+        command = SON({
+            "count": self._collection,
+        })
+        command.update({"query": self._spec})
+
+        response, error = yield gen.Task(self._database.command, command)
+
+        total = 0
+        if response and len(response) > 0 and 'n' in response:
+            total = int(response['n'])
+
+        callback(total)
+
+    @gen.engine
+    def distinct(self, key, callback):
+        """Get a list of distinct values for `key` among all documents
+        in the result set of this query.
+
+        :Parameters:
+          - `key`: name of key for which we want to get the distinct values
+        """
+        if not isinstance(key, basestring):
+            raise TypeError("key must be an instance "
+                            "of %s" % (basestring.__name__,))
+
+        command = SON({
+            "distinct": self._collection,
+        })
+
+        command.update({"key": key})
+        if self._spec:
+            command.update({"query": self._spec})
+
+        response, error = yield gen.Task(self._database.command, command)
+
+        callback(response['values'])
 
     def _query_options(self):
         """Get the query options string to use for this query."""

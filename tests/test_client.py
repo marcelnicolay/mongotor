@@ -153,3 +153,38 @@ class ClientTestCase(testing.AsyncTestCase):
 
         response['_id'].should.be(documents[2]['_id'])
         error.should.be.none
+
+    def test_count_documents_in_find(self):
+        """[ClientTestCase] - counting documents"""
+        db = Database.connect(["localhost:27027", "localhost:27028"],
+            dbname='test')
+
+        documents = [{'_id': ObjectId(), 'param': 'shouldbeparam1'},
+            {'_id': ObjectId(), 'param': 'shouldbeparam1'},
+            {'_id': ObjectId(), 'param': 'shouldbeparam2'}]
+
+        db.collection_test.insert(documents, callback=self.stop)
+        response, error = self.wait()
+
+        db.collection_test.find({"param": 'shouldbeparam1'}).count(callback=self.stop)
+        total = self.wait()
+
+        total.should.be.equal(2)
+
+    def test_distinct_documents_in_find(self):
+        """[ClientTestCase] - distinct documents"""
+        db = Database.connect(["localhost:27027", "localhost:27028"],
+            dbname='test')
+
+        documents = [{'_id': ObjectId(), 'param': 'shouldbeparam1', 'uuid': 100},
+            {'_id': ObjectId(), 'param': 'shouldbeparam1', 'uuid': 100},
+            {'_id': ObjectId(), 'param': 'shouldbeparam2', 'uuid': 200}]
+
+        db.collection_test.insert(documents, callback=self.stop)
+        response, error = self.wait()
+
+        db.collection_test.find({"param": 'shouldbeparam1'}).distinct('uuid', callback=self.stop)
+        distincts = self.wait()
+
+        distincts.should.have.length_of(1)
+        distincts[0].should.be.equal(100)
