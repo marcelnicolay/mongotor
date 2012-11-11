@@ -37,7 +37,7 @@ install_deps:
 	pip install -r requirements-dev.txt
 
 test: clean
-	nosetests -s --verbose --with-coverage --cover-package=mongotor tests/*
+	nosetests
 
 clean:
 	echo "Cleaning up build and *.pyc files..."
