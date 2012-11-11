@@ -147,13 +147,16 @@ class ConnectionPoolTestCase(testing.AsyncTestCase):
         """[ConnectionPoolTestCase] - check connections when use cursors"""
         db = Database.connect('localhost:27027', dbname='test', maxconnections=10, maxusage=29)
 
-        for i in range(2):
-            db.cards.insert({'_id': ObjectId(), 'range': i}, callback=self.stop)
+        try:
+            for i in range(2):
+                db.cards.insert({'_id': ObjectId(), 'range': i}, callback=self.stop)
+                self.wait()
+
+            db._nodes[0].pool._connections.should.be.equal(0)
+
+            db.cards.find({}, callback=self.stop)
             self.wait()
 
-        db._nodes[0].pool._connections.should.be.equal(0)
-
-        db.cards.find({}, callback=self.stop)
-        self.wait()
-
-        db._nodes[0].pool._connections.should.be.equal(0)
+            db._nodes[0].pool._connections.should.be.equal(0)
+        finally:
+            Database.disconnect()
