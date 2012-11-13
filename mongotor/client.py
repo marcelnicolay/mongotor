@@ -15,10 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import logging
+from bson.code import Code
 from tornado import gen
 from mongotor.node import ReadPreference
 from mongotor.cursor import Cursor
 from mongotor import message
+from mongotor import helpers
 
 log = logging.getLogger(__name__)
 
@@ -190,7 +192,7 @@ class Client(object):
 
         log.debug("mongo: db.{0}.find({spec}).limit({limit}).sort({sort})".format(
             self._collection_name,
-            spec=args[0] or {},
+            spec=args[0] if args else {},
             sort=kwargs.get('sort', {}),
             limit=kwargs.get('limit', '')
         ))
@@ -201,3 +203,97 @@ class Client(object):
             cursor.find(callback=kwargs['callback'])
         else:
             return cursor
+
+    def distinct(self, key, callback):
+        """Get a list of distinct values for `key` among all documents
+        in this collection.
+
+        Raises :class:`TypeError` if `key` is not an instance of
+        :class:`basestring` (:class:`str` in python 3).
+
+        To get the distinct values for a key in the result set of a
+        query use :meth:`~mongotor.cursor.Cursor.distinct`.
+
+        :Parameters:
+          - `key`: name of key for which we want to get the distinct values
+
+        """
+        self.find().distinct(key, callback=callback)
+
+    def count(self, callback):
+        """Get the size of the results among all documents.
+
+        Returns the number of documents in the results set
+        """
+        self.find().count(callback=callback)
+
+    @gen.engine
+    def aggregate(self, pipeline, read_preference=None, callback=None):
+        """Perform an aggregation using the aggregation framework on this
+        collection.
+
+        :Parameters:
+          - `pipeline`: a single command or list of aggregation commands
+          - `read_preference`
+
+        .. note:: Requires server version **>= 2.1.0**
+
+        .. _aggregate command:
+            http://docs.mongodb.org/manual/applications/aggregation
+        """
+        if not isinstance(pipeline, (dict, list, tuple)):
+            raise TypeError("pipeline must be a dict, list or tuple")
+
+        if isinstance(pipeline, dict):
+            pipeline = [pipeline]
+
+        response, error = yield gen.Task(self._database.command,
+            "aggregate", self._collection, pipeline=pipeline,
+            read_preference=read_preference)
+
+        callback(response)
+
+    @gen.engine
+    def group(self, key, condition, initial, reduce, finalize=None,
+        read_preference=None, callback=None):
+        """Perform a query similar to an SQL *group by* operation.
+
+        Returns an array of grouped items.
+
+        The `key` parameter can be:
+
+          - ``None`` to use the entire document as a key.
+          - A :class:`list` of keys (each a :class:`basestring`
+            (:class:`str` in python 3)) to group by.
+          - A :class:`basestring` (:class:`str` in python 3), or
+            :class:`~bson.code.Code` instance containing a JavaScript
+            function to be applied to each document, returning the key
+            to group by.
+
+        :Parameters:
+          - `key`: fields to group by (see above description)
+          - `condition`: specification of rows to be
+            considered (as a :meth:`find` query specification)
+          - `initial`: initial value of the aggregation counter object
+          - `reduce`: aggregation function as a JavaScript string
+          - `finalize`: function to be called on each object in output list.
+
+        """
+
+        group = {}
+        if isinstance(key, basestring):
+            group["$keyf"] = Code(key)
+        elif key is not None:
+            group = {"key": helpers._fields_list_to_dict(key)}
+
+        group["ns"] = self._collection
+        group["$reduce"] = Code(reduce)
+        group["cond"] = condition
+        group["initial"] = initial
+        if finalize is not None:
+            group["finalize"] = Code(finalize)
+
+        response, error = yield gen.Task(self._database.command,
+            "group", group, read_preference=read_preference)
+
+        callback(response)
