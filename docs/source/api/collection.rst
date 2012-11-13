@@ -1,11 +1,18 @@
-:mod:`collection` -- Map a mongo collection into a python class
+:mod:`collection` -- A mongo collection
 ============================================
 
-.. automodule:: mongotor.orm.collection
-   :synopsis: map a mongo collection to a python class
+.. automodule:: mongotor.client
+   :synopsis: a mongo collection
 
-   .. autoclass:: mongotor.orm.collection.Collection
+   .. autoclass:: mongotor.client.Client
 
-      .. automethod:: save
+      .. automethod:: insert
       .. automethod:: remove
       .. automethod:: update
+      .. automethod:: find_one
+      .. automethod:: find
+      .. automethod:: count
+      .. automethod:: distinct
+      .. automethod:: aggregate
+      .. automethod:: group
+
