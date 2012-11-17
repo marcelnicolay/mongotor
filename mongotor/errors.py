@@ -17,19 +17,24 @@
 
 
 class Error(StandardError):
-    pass
+    """Base class for all mongotor exceptions.
+
+    """
 
 
 class InterfaceError(Error):
-    pass
+    """Raised when a connection to the database cannot be made or is lost.
+    """
 
 
 class TooManyConnections(InterfaceError):
-    pass
+    """Raised when a pool is busy.
+    """
 
 
 class InvalidOperationError(Error):
-    pass
+    """Raised when a client attempts to perform an invalid operation.
+    """
 
 
 class DatabaseError(Error):
@@ -37,6 +42,9 @@ class DatabaseError(Error):
 
 
 class IntegrityError(DatabaseError):
+    """Raised when a safe insert or update fails due to a duplicate key error.
+
+    """
     def __init__(self, msg, code=None):
         self.code = code
         self.msg = msg

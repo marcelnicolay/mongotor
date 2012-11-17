@@ -3,6 +3,7 @@ from tornado.ioloop import IOLoop
 from tornado import testing
 from mongotor.database import Database
 from bson import ObjectId
+from datetime import datetime
 import sure
 
 
@@ -155,7 +156,7 @@ class ClientTestCase(testing.AsyncTestCase):
         error.should.be.none
 
     def test_count_documents_in_find(self):
-        """[ClientTestCase] - counting documents"""
+        """[ClientTestCase] - counting documents in query"""
         db = Database.connect(["localhost:27027", "localhost:27028"],
             dbname='test')
 
@@ -171,8 +172,25 @@ class ClientTestCase(testing.AsyncTestCase):
 
         total.should.be.equal(2)
 
+    def test_count_all_documents(self):
+        """[ClientTestCase] - counting among all documents"""
+        db = Database.connect(["localhost:27027", "localhost:27028"],
+            dbname='test')
+
+        documents = [{'_id': ObjectId(), 'param': 'shouldbeparam1'},
+            {'_id': ObjectId(), 'param': 'shouldbeparam1'},
+            {'_id': ObjectId(), 'param': 'shouldbeparam2'}]
+
+        db.collection_test.insert(documents, callback=self.stop)
+        response, error = self.wait()
+
+        db.collection_test.count(callback=self.stop)
+        total = self.wait()
+
+        total.should.be.equal(3)
+
     def test_distinct_documents_in_find(self):
-        """[ClientTestCase] - distinct documents"""
+        """[ClientTestCase] - distinct documents in query"""
         db = Database.connect(["localhost:27027", "localhost:27028"],
             dbname='test')
 
@@ -188,3 +206,112 @@ class ClientTestCase(testing.AsyncTestCase):
 
         distincts.should.have.length_of(1)
         distincts[0].should.be.equal(100)
+
+    def test_distinct_all_documents(self):
+        """[ClientTestCase] - distinct among all documents"""
+        db = Database.connect(["localhost:27027", "localhost:27028"],
+            dbname='test')
+
+        documents = [{'_id': ObjectId(), 'param': 'shouldbeparam1', 'uuid': 100},
+            {'_id': ObjectId(), 'param': 'shouldbeparam1', 'uuid': 100},
+            {'_id': ObjectId(), 'param': 'shouldbeparam2', 'uuid': 200}]
+
+        db.collection_test.insert(documents, callback=self.stop)
+        response, error = self.wait()
+
+        db.collection_test.distinct('uuid', callback=self.stop)
+        distincts = self.wait()
+
+        distincts.should.have.length_of(2)
+        distincts[0].should.be.equal(100)
+        distincts[1].should.be.equal(200)
+
+    def test_aggregate_collection(self):
+        """[ClientTestCase] - aggregate command"""
+        db = Database.connect(["localhost:27027", "localhost:27028"],
+            dbname='test')
+
+        documents = [{
+            "title": "this is my title",
+            "author": "bob",
+            "posted": datetime.now(),
+            "pageViews": 5,
+            "tags": ["good", "fun"],
+        }, {
+            "title": "this is my title",
+            "author": "joe",
+            "posted": datetime.now(),
+            "pageViews": 5,
+            "tags": ["good"],
+        }]
+
+        db.articles.insert(documents, callback=self.stop)
+        response, error = self.wait()
+
+        try:
+            pipeline = {
+                "$project": {
+                     "author": 1,
+                     "tags": 1,
+                }
+            }, {
+                "$unwind": "$tags"
+            }, {
+                "$group": {
+                     "_id": {"tags": "$tags"},
+                     "authors": {"$addToSet": "$author"}
+                }
+            }
+            db.articles.aggregate(pipeline, callback=self.stop)
+
+            response = self.wait()
+
+            response['result'][0]['_id'].should.be.equal({u'tags': u'fun'})
+            response['result'][0]['authors'].should.be.equal([u'bob'])
+
+            response['result'][1]['_id'].should.be.equal({u'tags': u'good'})
+            response['result'][1]['authors'].should.be.equal([u'joe', u'bob'])
+        finally:
+            db.articles.remove({}, callback=self.stop)
+            self.wait()
+
+    def test_group(self):
+        """[ClientTestCase] - group command"""
+        db = Database.connect(["localhost:27027", "localhost:27028"],
+            dbname='test')
+        group = {
+            'key': None,
+            'condition': {'author': 'joe'},
+            'initial': {'csum': 0},
+            'reduce': 'function(obj,prev){prev.csum+=obj.pageViews;}'
+        }
+
+        documents = [{
+            "title": "this is my title",
+            "author": "bob",
+            "posted": datetime.now(),
+            "pageViews": 5,
+            "tags": ["good", "fun"],
+        }, {
+            "title": "this is my title",
+            "author": "joe",
+            "posted": datetime.now(),
+            "pageViews": 6,
+            "tags": ["good"],
+        }, {
+            "title": "this is my title",
+            "author": "joe",
+            "posted": datetime.now(),
+            "pageViews": 10,
+            "tags": ["good"],
+        }]
+        db.articles.insert(documents, callback=self.stop)
+        response, error = self.wait()
+
+        try:
+            db.articles.group(callback=self.stop, **group)
+            result = self.wait()
+            result['retval'][0]['csum'].should.be.equal(16)
+        finally:
+            db.articles.remove({}, callback=self.stop)
+            self.wait()

@@ -60,25 +60,6 @@ class Manager(object):
         client.find(query).distinct(key, callback=callback)
 
     @gen.engine
-    def sum(self, query, field, callback):
-        command = {
-            "group": {
-                'ns': self.collection.__collection__,
-                'cond': query,
-                'initial': {'csum': 0},
-                '$reduce': 'function(obj,prev){prev.csum+=obj.' + field + ';}'
-            }
-        }
-
-        result, error = yield gen.Task(Database().command, command)
-        total = 0
-
-        if result and result['retval']:
-            total = result['retval'][0]['csum']
-
-        callback(total)
-
-    @gen.engine
     def geo_near(self, near, max_distance=None, num=None, spherical=None,
         unique_docs=None, query=None, callback=None, **kw):
 

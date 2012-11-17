@@ -17,12 +17,8 @@ Sub-modules:
    connection
    database
    collection
-   cursor
+   orm
    errors
-   master_slave_connection
    message
    pool
-   replica_set_connection
-   son_manipulator
-   cursor_manager
-   uri_parser
+   replica_set

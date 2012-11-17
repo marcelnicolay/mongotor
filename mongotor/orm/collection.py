@@ -88,8 +88,19 @@ class Collection(object):
         for attr_name, attr_type in iteritems:
             if isinstance(attr_type, Field):
                 attr_value = getattr(self, attr_name)
-                if attr_value != None:
+                if attr_value is not None:
                     items[attr_name] = attr_value
+
+        # Gets the fields from base classes when fields are None so we only
+        # get the dirty fields when we only want to update those.
+        if not fields:
+            for cls in self.__class__.__mro__:
+                for attr_name, attr_type in cls.__dict__.iteritems():
+                    if isinstance(attr_type, Field):
+                        attr_value = getattr(self, attr_name)
+                        if attr_value is not None:
+                            items[attr_name] = attr_value
+
         return items
 
     @property

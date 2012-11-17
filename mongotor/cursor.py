@@ -94,12 +94,10 @@ class Cursor(object):
 
         Returns the number of documents in the results set for this query. Does
         """
-        command = SON({
-            "count": self._collection,
-        })
-        command.update({"query": self._spec})
+        command = {"query": self._spec}
 
-        response, error = yield gen.Task(self._database.command, command)
+        response, error = yield gen.Task(self._database.command,
+            'count', self._collection, **command)
 
         total = 0
         if response and len(response) > 0 and 'n' in response:
@@ -119,15 +117,12 @@ class Cursor(object):
             raise TypeError("key must be an instance "
                             "of %s" % (basestring.__name__,))
 
-        command = SON({
-            "distinct": self._collection,
-        })
-
-        command.update({"key": key})
+        command = {"key": key}
         if self._spec:
             command.update({"query": self._spec})
 
-        response, error = yield gen.Task(self._database.command, command)
+        response, error = yield gen.Task(self._database.command,
+            'distinct', self._collection, **command)
 
         callback(response['values'])
 
