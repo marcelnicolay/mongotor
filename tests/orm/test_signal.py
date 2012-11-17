@@ -167,7 +167,8 @@ class SignalTestCase(testing.AsyncTestCase, unittest.TestCase):
         collection_test = CollectionTest()
         collection_test._id = ObjectId()
         collection_test.string_attr = "should be string value"
-        collection_test.save()
+        collection_test.save(callback=self.stop)
+        self.wait()
 
         @signal.receiver(signal.post_update, CollectionTest)
         def collection_post_update_handler(sender, instance):

@@ -15,7 +15,7 @@
 import bson
 import struct
 from mongotor.errors import (DatabaseError,
-    InterfaceError, TimeoutError, OperationFailure)
+    InterfaceError, TimeoutError)
 
 
 def _unpack_response(response, cursor_id=None, as_class=dict, tz_aware=False):
@@ -77,8 +77,8 @@ def _check_command_response(response, msg="%s", allowable_errors=[]):
                 if "assertionCode" in details:
                     ex_msg += (", assertionCode: %d" %
                                (details["assertionCode"],))
-                raise OperationFailure(ex_msg, details.get("assertionCode"))
-            raise OperationFailure(msg % details["errmsg"])
+                raise DatabaseError(ex_msg, details.get("assertionCode"))
+            raise DatabaseError(msg % details["errmsg"])
 
 
 def _fields_list_to_dict(fields):

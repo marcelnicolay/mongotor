@@ -15,12 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import with_statement
-from functools import partial
 from tornado import iostream
 from tornado import stack_context
 from mongotor.errors import (InterfaceError,
-    IntegrityError, ProgrammingError, DuplicateKeyError,
-    OperationFailure)
+    IntegrityError, ProgrammingError, DatabaseError)
 from mongotor import helpers
 import socket
 import logging
@@ -80,16 +78,11 @@ class Connection(object):
     def _parse_response(self, response):
         callback = self._callback
         check_response = self._check_response
-
         self.reset()
         self.release()
 
         if check_response:
-            try:
-                response = self.__check_response_to_last_error(response)
-            except OperationFailure, e:
-                callback((response, e))
-                return
+            response = self.__check_response_to_last_error(response)
 
         #logger.debug('response: %s' % response)
         callback((response, None))
@@ -98,7 +91,7 @@ class Connection(object):
         """Check a response to a lastError message for errors.
 
         `response` is a byte string representing a response to the message.
-        If it represents an error response we raise OperationFailure.
+        If it represents an error response we raise DatabaseError.
 
         Return the response as a document.
         """
@@ -107,6 +100,7 @@ class Connection(object):
         error = response["data"][0]
 
         helpers._check_command_response(error)
+
         error_msg = error.get("err", "")
         if error_msg is None:
             return error
@@ -122,11 +116,11 @@ class Connection(object):
 
         if "code" in details:
             if details["code"] in [11000, 11001, 12582]:
-                raise DuplicateKeyError(details["err"])
+                raise IntegrityError(details["err"])
             else:
-                raise OperationFailure(details["err"], details["code"])
+                raise DatabaseError(details["err"], details["code"])
         else:
-            raise OperationFailure(details["err"])
+            raise DatabaseError(details["err"])
 
     def _socket_close(self):
         logger.debug('{0} connection stream closed'.format(self))
@@ -162,9 +156,13 @@ class Connection(object):
     def close_on_error(self):
         try:
             yield
+        except DatabaseError, de:
+            logger.error('database error'.format(de))
+            raise
         except Exception:
-            logger.exception('{0} exception in operation'.format(self))
+            logger.error('{0} exception in operation'.format(self))
             self.close()
+            raise
 
     def send_message(self, message, with_last_error=False, callback=None):
         """Say something to Mongo.

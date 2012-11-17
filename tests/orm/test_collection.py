@@ -42,7 +42,7 @@ class CollectionTestCase(testing.AsyncTestCase):
         doc_test.save(callback=self.stop)
         response, error = self.wait()
 
-        response['data'][0]['ok'].should.be.equal(1.0)
+        response['ok'].should.be.equal(1.0)
         error.should.be.none
 
     def test_remove_a_document(self):
@@ -62,7 +62,7 @@ class CollectionTestCase(testing.AsyncTestCase):
         doc_test.remove(callback=self.stop)
         response, error = self.wait()
 
-        response['data'][0]['ok'].should.be.equal(1.0)
+        response['ok'].should.be.equal(1.0)
         error.should.be.none
 
     def test_update_a_document(self):
@@ -83,7 +83,7 @@ class CollectionTestCase(testing.AsyncTestCase):
         doc_test.update(callback=self.stop)
         response, error = self.wait()
 
-        response['data'][0]['ok'].should.be.equal(1.0)
+        response['ok'].should.be.equal(1.0)
         error.should.be.none
 
     def test_can_create_collection_from_dictionary(self):
@@ -269,8 +269,11 @@ class CollectionTestCase(testing.AsyncTestCase):
         doc_test.string_attr = "should be string value"
 
         doc_test.save(callback=self.stop)
+        db_doc_test = self.wait()
+
         doc_test.update(callback=self.stop)
         db_doc_test = self.wait()
+
         db_doc_test.should.be(tuple())
 
     def test_get_fields_from_base_classes(self):

@@ -3,9 +3,10 @@ from __future__ import with_statement
 from tornado.ioloop import IOLoop
 from tornado import testing
 from mongotor.connection import Connection
-from mongotor.errors import InterfaceError, DatabaseError
+from mongotor.errors import InterfaceError, DatabaseError, IntegrityError
 from bson import ObjectId
 from mongotor import message
+from mongotor import helpers
 
 import sure
 import fudge
@@ -42,9 +43,10 @@ class ConnectionTestCase(testing.AsyncTestCase):
         message_test = message.query(0, 'mongotor_test.$cmd', 0, 1,
             {'driverOIDTest': object_id})
 
-        self.conn.send_message(message_test, callback=self.stop)
-        response, error = self.wait()
+        self.conn.send_message_with_response(message_test, callback=self.stop)
+        response, _ = self.wait()
 
+        response = helpers._unpack_response(response)
         result = response['data'][0]
 
         result['oid'].should.be(object_id)
@@ -59,23 +61,18 @@ class ConnectionTestCase(testing.AsyncTestCase):
         self.conn._connected.should_not.be.ok
         self.conn._stream.closed().should.be.ok
 
-    @fudge.patch('mongotor.connection.helpers')
-    def test_return_integrity_error_when_mongo_return_err(self, fake_helpers):
+    def test_return_integrity_error_when_mongo_return_err(self):
         """[ConnectionTestCase] - Returns IntegrityError when mongo return a message with err"""
 
-        fake_helpers.expects('_unpack_response') \
-            .returns({'data': [{'err': 'shouldBeError', 'code': 1000}]})
-
         object_id = ObjectId()
-        message_test = message.query(0, 'mongotor_test.$cmd', 0, 1,
-            {'driverOIDTest': object_id})
+        message_insert = message.insert('mongotor_test.articles', [{'_id': object_id}],
+            False, True, {})
 
-        self.conn.send_message(message_test, callback=self.stop)
-        response, error = self.wait()
+        self.conn.send_message(message_insert, True, callback=self.stop)
+        self.wait()
 
-        error.should.be.a('mongotor.errors.IntegrityError')
-        error.msg.should.be.equal('shouldBeError')
-        error.code.should.be.equal(1000)
+        self.conn.send_message(message_insert, True, callback=self.stop)
+        self.wait.when.called_with().throw(IntegrityError)
 
     @fudge.patch('mongotor.connection.helpers')
     def test_raises_error_when_cant_unpack_response(self, fake_helpers):
@@ -88,11 +85,9 @@ class ConnectionTestCase(testing.AsyncTestCase):
         message_test = message.query(0, 'mongotor_test.$cmd', 0, 1,
             {'driverOIDTest': object_id})
 
-        self.conn.send_message(message_test, callback=self.stop)
-        response, error = self.wait()
+        self.conn.send_message(message_test, with_last_error=True, callback=self.stop)
 
-        response.should.be.none
-        error.should.be.a('mongotor.errors.DatabaseError')
+        self.wait.when.called_with().throw(DatabaseError, 'database error')
 
     def test_reconnect_when_connection_was_lost(self):
         """[ConnectionTestCase] - Reconnect to mongo when connection was lost"""
