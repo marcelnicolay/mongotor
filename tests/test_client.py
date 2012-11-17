@@ -315,3 +315,33 @@ class ClientTestCase(testing.AsyncTestCase):
         finally:
             db.articles.remove({}, callback=self.stop)
             self.wait()
+
+    def test_insert_and_find_with_elemmatch(self):
+        documents = [{
+            '_id': ObjectId(),
+            'name': 'should be name 1',
+            'comment': [{'author': 'joe'}, {'author': 'ana'}]
+        }, {
+            '_id': ObjectId(),
+            'name': 'should be name 2',
+            'comment': [{'author': 'ana'}]
+        }]
+
+        db = Database.connect(["localhost:27027", "localhost:27028"],
+            dbname='test')
+        db.articles.insert(documents, callback=self.stop)
+        self.wait()
+
+        db.articles.find({'comment.author': 'joe'}, ('comment.$.author', ), limit=-1, callback=self.stop)
+
+        result, _ = self.wait()
+
+        keys = result.keys()
+        keys.sort()
+
+        keys.should.be.equal(['_id', 'comment'])
+
+        str(result['_id']).should.be.equal(str(documents[0]['_id']))
+        result['comment'].should.have.length_of(1)
+        result['comment'][0]['author'].should.be.equal('joe')
+        _.should.be.none

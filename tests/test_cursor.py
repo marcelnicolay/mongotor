@@ -94,7 +94,7 @@ class CursorTestCase(testing.AsyncTestCase):
         document3 = {'_id': ObjectId(), 'name': 'should be name 3', 'flag': 1}
         self._insert_document(document3)
 
-        cursor = Cursor({'flag': 1}, database=Database(), collection='cursor_test', limit=2)
+        cursor = Cursor(Database(), 'cursor_test', {'flag': 1}, limit=2)
         cursor.find(callback=self.stop)
 
         result, error = self.wait()
@@ -162,11 +162,41 @@ class CursorTestCase(testing.AsyncTestCase):
         document3 = {'_id': ObjectId(), 'name': 'should be name 3', 'size': 3}
         self._insert_document(document3)
 
-        cursor = Cursor(document2['_id'], database=Database(),
-            collection='cursor_test', limit=-1)
+        cursor = Cursor(Database(), 'cursor_test', document2['_id'], limit=-1)
         cursor.find(callback=self.stop)
 
         result, error = self.wait()
 
         str(result['_id']).should.be.equal(str(document2['_id']))
         error.should.be.none
+
+    def test_find_returning_fields(self):
+        """[CursorTestCase] - Find and return only selectd fields"""
+
+        document1 = {'_id': ObjectId(), 'name': 'should be name 1',
+            'comment': [{'author': 'joe'}, {'author': 'ana'}]}
+        self._insert_document(document1)
+
+        document2 = {'_id': ObjectId(), 'name': 'should be name 2',
+            'comment': [{'author': 'ana'}]}
+        self._insert_document(document2)
+
+        document3 = {'_id': ObjectId(), 'name': 'should be name 3',
+            'comment': [{'author': 'june'}]}
+        self._insert_document(document3)
+
+        cursor = Cursor(Database(), 'cursor_test', {'comment.author': 'joe'},
+            ('comment.$.author', ), limit=-1)
+        cursor.find(callback=self.stop)
+
+        result, _ = self.wait()
+
+        keys = result.keys()
+        keys.sort()
+
+        keys.should.be.equal(['_id', 'comment'])
+
+        str(result['_id']).should.be.equal(str(document1['_id']))
+        result['comment'].should.have.length_of(1)
+        result['comment'][0]['author'].should.be.equal('joe')
+        _.should.be.none

@@ -206,7 +206,7 @@ class Client(object):
             sort=kwargs.get('sort', {}),
             limit=kwargs.get('limit', '')
         ))
-        cursor = Cursor(database=self._database, collection=self._collection,
+        cursor = Cursor(self._database, self._collection,
             *args, **kwargs)
 
         if 'callback' in kwargs:
