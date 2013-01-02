@@ -36,7 +36,7 @@ class Field(object):
 
         value = instance._data.get(self.name)
         if value is None:
-            return self.default
+            return self.default() if callable(self.default) else self.default
 
         return value
 
