@@ -37,7 +37,8 @@ class CollectionMetaClass(type):
         # Add the document's fields to the _data
         for attr_name, attr_value in attrs.items():
             if hasattr(attr_value, "__class__") and\
-                issubclass(attr_value.__class__, Field):
+                    issubclass(attr_value.__class__, Field) and\
+                    attr_value.name is None:
 
                 attr_value.name = attr_name
 
