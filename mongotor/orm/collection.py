@@ -35,7 +35,7 @@ class CollectionMetaClass(type):
         global __lazy_classes__
 
         # Add the document's fields to the _data
-        for attr_name, attr_value in attrs.items():
+        for attr_name, attr_value in attrs.iteritems():
             if hasattr(attr_value, "__class__") and\
                     issubclass(attr_value.__class__, Field) and\
                     attr_value.name is None:
@@ -122,7 +122,7 @@ class Collection(object):
         >>> assert user.name == 'should be name'
         """
         instance = cls()
-        for (key, value) in dictionary.items():
+        for (key, value) in dictionary.iteritems():
             try:
                 setattr(instance, str(key), value)
             except TypeError, e:
