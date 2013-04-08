@@ -44,7 +44,6 @@ test: clean
 clean:
 	echo "Cleaning up build and *.pyc files..."
 	find . -name '*.pyc' -exec rm -rf {} \;
-	rm -rf build
 
 release: clean test publish
 	printf "Exporting to $(filename)... "
