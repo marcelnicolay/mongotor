@@ -6,7 +6,7 @@ filename=mongotor-`python -c 'import mongotor;print mongotor.version'`.tar.gz
 
 export PYTHONPATH:=  ${PWD}
 
-MONGOD=/usr/local/Cellar/mongodb/2.2.0-x86_64/bin/mongod
+MONGOD=mongod
 MONGO_DATA=`pwd`/data
 
 mongo-start-node1:
