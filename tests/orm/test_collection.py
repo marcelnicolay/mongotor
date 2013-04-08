@@ -22,7 +22,7 @@ class CollectionTestCase(testing.AsyncTestCase):
 
     def setUp(self):
         super(CollectionTestCase, self).setUp()
-        Database.connect(["localhost:27027", "localhost:27028"], dbname='test')
+        Database.init(["localhost:27027", "localhost:27028"], dbname='test')
 
     def tearDown(self):
         super(CollectionTestCase, self).tearDown()
@@ -170,17 +170,17 @@ class CollectionTestCase(testing.AsyncTestCase):
         issubclass(Collection("ChildCollectionTest"),\
             ChildCollectionTest).should.be.ok
 
-    def test_raises_erro_when_use_collection_with_not_connected_database(self):
-        """[CollectionTestCase] - Raises DatabaseError when use collection with a not connected database"""
+    def test_raises_erro_when_use_collection_with_not_initialized_database(self):
+        """[CollectionTestCase] - Raises DatabaseError when use collection with a not initialized database"""
 
         class CollectionTest(Collection):
             __collection__ = 'collection_test'
 
         Database.disconnect()
         CollectionTest().save.when.called_with(callback=None) \
-            .throw(DatabaseError, 'you must be connect')
+            .throw(DatabaseError, 'you must be initialize database before perform this action')
 
-        Database.connect(["localhost:27027", "localhost:27028"], dbname='test')
+        Database.init(["localhost:27027", "localhost:27028"], dbname='test')
 
     def test_update_tracks_changed_attrs(self):
         """[CollectionTestCase] - Update a document and track dirty fields"""
@@ -247,6 +247,7 @@ class CollectionTestCase(testing.AsyncTestCase):
         doc_test.string_attr = "should be string value"
 
         doc_test.save(callback=self.stop)
+        self.wait()
 
         doc_test.string_attr = "changed"
 

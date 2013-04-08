@@ -1,3 +1,4 @@
+
 # coding: utf-8
 # <mongotor - An asynchronous driver and toolkit for accessing MongoDB with Tornado>
 # Copyright (C) <2012>  Marcel Nicolay <marcel.nicolay@gmail.com>
@@ -55,7 +56,7 @@ class Client(object):
 
         log.debug("mongo: db.{0}.insert({1})".format(self._collection_name, doc_or_docs))
 
-        node = self._database.get_node(ReadPreference.PRIMARY)
+        node = yield gen.Task(self._database.get_node, ReadPreference.PRIMARY)
         connection = yield gen.Task(node.connection)
 
         response, error = yield gen.Task(connection.send_message,
@@ -82,7 +83,7 @@ class Client(object):
             safe, {})
 
         log.debug("mongo: db.{0}.remove({1})".format(self._collection_name, spec_or_id))
-        node = self._database.get_node(ReadPreference.PRIMARY)
+        node = yield gen.Task(self._database.get_node, ReadPreference.PRIMARY)
         connection = yield gen.Task(node.connection)
 
         response, error = yield gen.Task(connection.send_message,
@@ -124,7 +125,7 @@ class Client(object):
         log.debug("mongo: db.{0}.update({1}, {2}, {3}, {4})".format(
             self._collection_name, spec, document, upsert, multi))
 
-        node = self._database.get_node(ReadPreference.PRIMARY)
+        node = yield gen.Task(self._database.get_node, ReadPreference.PRIMARY)
         connection = yield gen.Task(node.connection)
 
         response, error = yield gen.Task(connection.send_message,

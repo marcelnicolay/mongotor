@@ -145,7 +145,7 @@ class ConnectionPoolTestCase(testing.AsyncTestCase):
 
     def test_check_connections_when_use_cursors(self):
         """[ConnectionPoolTestCase] - check connections when use cursors"""
-        db = Database.connect('localhost:27027', dbname='test', maxconnections=10, maxusage=29)
+        db = Database.init('localhost:27027', dbname='test', maxconnections=10, maxusage=29)
 
         try:
             for i in range(2):

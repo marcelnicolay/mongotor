@@ -22,7 +22,9 @@ class ReplicaSetTestCase(testing.AsyncTestCase):
     def test_configure_nodes(self):
         """[ReplicaSetTestCase] - Configure nodes"""
 
-        Database.connect(["localhost:27027", "localhost:27028"], dbname='test')
+        db = Database.init(["localhost:27027", "localhost:27028"], dbname='test')
+        db._connect(callback=self.stop)
+        self.wait()
 
         master_node = ReadPreference.select_primary_node(Database()._nodes)
         secondary_node = ReadPreference.select_node(Database()._nodes, mode=ReadPreference.SECONDARY)
@@ -45,7 +47,10 @@ class ReplicaSetTestCase(testing.AsyncTestCase):
         time.sleep(10)
 
         try:
-            Database.connect(["localhost:27027", "localhost:27028"], dbname='test')
+            db = Database.init(["localhost:27027", "localhost:27028"], dbname='test')
+            db._connect(callback=self.stop)
+            self.wait()
+
             Database().send_message.when.called_with((None, ''),
                 read_preference=ReadPreference.SECONDARY)\
                 .throw(DatabaseError)
@@ -65,8 +70,10 @@ class SecondaryPreferredTestCase(testing.AsyncTestCase):
 
     def test_find_on_secondary(self):
         """[SecondaryPreferredTestCase] - test find document from secondary"""
-        db = Database.connect(["localhost:27027", "localhost:27028"], dbname='test',
+        db = Database.init(["localhost:27027", "localhost:27028"], dbname='test',
             read_preference=ReadPreference.SECONDARY_PREFERRED)
+        db._connect(callback=self.stop)
+        self.wait()
 
         doc = {'_id': ObjectId()}
         db.test.insert(doc, callback=self.stop)

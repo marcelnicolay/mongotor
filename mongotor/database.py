@@ -23,13 +23,14 @@ from bson import SON
 from mongotor.node import Node, ReadPreference
 from mongotor.errors import DatabaseError
 from mongotor.client import Client
+import warnings
 
 
-def connected(fn):
+def initialized(fn):
     @wraps(fn)
     def wrapped(self, *args, **kwargs):
         if not hasattr(self, '_initialized'):
-            raise DatabaseError("you must be connect to database before perform this action")
+            raise DatabaseError("you must be initialize database before perform this action")
 
         return fn(self, *args, **kwargs)
 
@@ -47,44 +48,72 @@ class Database(object):
 
         return cls._instance
 
-    def init(self, addresses, dbname, read_preference=None, **kwargs):
+    @classmethod
+    def init(cls, addresses, dbname, read_preference=None, **kwargs):
+        """initialize the database
+
+        >>> Database.init(['localhost:27017', 'localhost:27018'], 'test', maxconnections=100)
+        >>> db = Database()
+        >>> db.collection.insert({...}, callback=...)
+
+        :Parameters:
+          - `addresses` : addresses can be a list or a simple string, host:port
+          - `dbname` : mongo database name
+          - `read_preference` (optional): The read preference for
+            this query.
+          - `maxconnections` (optional): maximum open connections for pool. 0 for unlimited
+          - `maxusage` (optional): number of requests allowed on a connection
+            before it is closed. 0 for unlimited
+          - `autoreconnect`: autoreconnect to database. default is True
+        """
+        if cls._instance and hasattr(cls._instance, '_initialized') and cls._instance._initialized:
+            return cls._instance
+
+        database = Database()
+        database._init(addresses, dbname, read_preference, **kwargs)
+
+        return database
+
+    def _init(self, addresses, dbname, read_preference=None, **kwargs):
         self._addresses = self._parse_addresses(addresses)
         self._dbname = dbname
         self._read_preference = read_preference or ReadPreference.PRIMARY
         self._nodes = []
         self._pool_kwargs = kwargs
-        self._initialized = False
+        self._initialized = True
+        self._connected = False
 
         for host, port in self._addresses:
             node = Node(host, port, self, self._pool_kwargs)
             self._nodes.append(node)
 
-        ioloop_is_running = IOLoop.instance().running()
-        self._config_nodes(callback=partial(self._on_config_node, ioloop_is_running))
+    def _connect(self, callback):
+        """Connect to database
+        connect all mongodb nodes, configuring states and preferences
+        - `callback`: (optional) method that will be called when the database is connected
+        """
+        self._config_nodes(callback=partial(self._on_config_node, callback=callback))
 
-        while True:
-            if not ioloop_is_running:
-                IOLoop.instance().start()
+    def _config_nodes(self, callback=None):
+        for node in self._nodes:
+            node.config(callback)
 
-            if self._initialized:
-                break
+        IOLoop.instance().add_timeout(timedelta(seconds=30), self._config_nodes)
 
-        IOLoop.instance().add_timeout(timedelta(seconds=5), self._config_nodes)
-
-    def _on_config_node(self, ioloop_is_running):
+    def _on_config_node(self, callback):
         for node in self._nodes:
             if not node.initialized:
                 return
 
-        self._initialized = True
-        if not ioloop_is_running:
-            IOLoop.instance().stop()
+        self._connected = True
+
+        callback()
 
     @property
     def dbname(self):
         return self._dbname
 
-    @connected
+    @initialized
     def get_collection_name(self, collection):
         return u'%s.%s' % (self.dbname, collection)
 
@@ -101,38 +130,15 @@ class Database(object):
 
         return parsed_addresses
 
-    def _config_nodes(self, callback=None):
-
-        for node in self._nodes:
-            node.config(callback)
-
-        IOLoop.instance().add_timeout(timedelta(seconds=30), self._config_nodes)
-
     @classmethod
-    def connect(cls, addresses, dbname, read_preference=None, **kwargs):
-        """Connect to database
+    def connect(cls, *args, **kwargs):
+        """connect database
 
-        >>> Database.connect(['localhost:27017', 'localhost:27018'], 'test', maxconnections=100)
-        >>> db = Database()
-        >>> db.collection.insert({...}, callback=...)
-
-        :Parameters:
-          - `addresses` : addresses can be a list or a simple string, host:port
-          - `dbname` : mongo database name
-          - `read_preference` (optional): The read preference for
-            this query.
-          - `maxconnections` (optional): maximum open connections for pool. 0 for unlimited
-          - `maxusage` (optional): number of requests allowed on a connection
-            before it is closed. 0 for unlimited
-          - `autoreconnect`: autoreconnect to database. default is True
+        this method is deprecated, use :class:`~mongotor.database.Database.init` to initiate a new database
         """
-        if cls._instance and hasattr(cls._instance, '_initialized'):
-            return cls._instance
+        warnings.warn("deprecated", DeprecationWarning)
 
-        database = Database()
-        database.init(addresses, dbname, read_preference, **kwargs)
-
-        return database
+        return cls.init(*args, **kwargs)
 
     @classmethod
     def disconnect(cls):
@@ -142,7 +148,7 @@ class Database(object):
 
         """
         if not cls._instance or not hasattr(cls._instance, '_initialized'):
-            raise ValueError("Database isn't connected")
+            raise ValueError("Database isn't initialized")
 
         for node in cls._instance._nodes:
             node.disconnect()
@@ -150,10 +156,10 @@ class Database(object):
         cls._instance = None
 
     @gen.engine
-    @connected
+    @initialized
     def send_message(self, message, read_preference=None,
         with_response=True, callback=None):
-        node = self.get_node(read_preference)
+        node = yield gen.Task(self.get_node, read_preference)
 
         connection = yield gen.Task(node.connection)
 
@@ -162,8 +168,16 @@ class Database(object):
         else:
             connection.send_message(message, callback=callback)
 
-    @connected
-    def get_node(self, read_preference=None):
+    @gen.engine
+    @initialized
+    def get_node(self, read_preference=None, callback=None):
+        assert callback
+
+        # check if database is connected
+        if not self._connected:
+            # connect database
+            yield gen.Task(self._connect)
+
         if read_preference is None:
             read_preference = self._read_preference
 
@@ -171,9 +185,9 @@ class Database(object):
         if not node:
             raise DatabaseError('could not find an available node')
 
-        return node
+        callback(node)
 
-    @connected
+    @initialized
     def command(self, command, value=1, read_preference=None,
         callback=None, check=True, allowable_errors=[], **kwargs):
         """Issue a MongoDB command.

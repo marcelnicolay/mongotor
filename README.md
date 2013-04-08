@@ -60,7 +60,7 @@ from bson import ObjectId
 class Handler(tornado.web.RequestHandler):
 
     def initialize(self):
-        self.db = Database.connect('localhost:27017', 'mongotor_test')
+        self.db = Database.init('localhost:27017', 'mongotor_test')
 
     @tornado.web.asynchronous
     @gen.engine
@@ -91,7 +91,7 @@ class Handler(tornado.web.RequestHandler):
 
     def initialize(self):
         # configuring an replica set
-        self.db = db = Database.connect(["localhost:27027", "localhost:27028"], dbname='mongotor_test',
+        self.db = db = Database.init(["localhost:27027", "localhost:27028"], dbname='mongotor_test',
             read_preference=ReadPreference.SECONDARY_PREFERRED)
 
     @tornado.web.asynchronous
@@ -122,7 +122,7 @@ from tornado import gen
 
 # A connection to the MongoDB database needs to be
 # established before perform operations
-Database.connect(['localhost:27017','localhost:27018'], 'mongotor_test')
+Database.init(['localhost:27017','localhost:27018'], 'mongotor_test')
 
 class User(collection.Collection):
     __collection__ = "user"

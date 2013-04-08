@@ -16,7 +16,7 @@ class CursorTestCase(testing.AsyncTestCase):
 
     def setUp(self):
         super(CursorTestCase, self).setUp()
-        Database.connect(["localhost:27027", "localhost:27028"], dbname='mongotor_test')
+        Database.init(["localhost:27027", "localhost:27028"], dbname='mongotor_test')
 
     def tearDown(self):
         super(CursorTestCase, self).tearDown()
@@ -25,7 +25,8 @@ class CursorTestCase(testing.AsyncTestCase):
         message_delete = message.delete('mongotor_test.cursor_test',
             {}, True, {})
 
-        node = Database().get_node(ReadPreference.PRIMARY)
+        Database().get_node(ReadPreference.PRIMARY, callback=self.stop)
+        node = self.wait()
         node.connection(self.stop)
         connection = self.wait()
 
@@ -38,7 +39,8 @@ class CursorTestCase(testing.AsyncTestCase):
         message_insert = message.insert('mongotor_test.cursor_test', [document],
             True, True, {})
 
-        node = Database().get_node(ReadPreference.PRIMARY)
+        Database().get_node(ReadPreference.PRIMARY, callback=self.stop)
+        node = self.wait()
         node.connection(self.stop)
         connection = self.wait()
 

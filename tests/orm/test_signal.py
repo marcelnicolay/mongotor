@@ -16,7 +16,7 @@ class SignalTestCase(testing.AsyncTestCase, unittest.TestCase):
     def setUp(self):
         super(SignalTestCase, self).setUp()
         SignalTestCase.signal_triggered = False
-        Database.connect(["localhost:27027", "localhost:27028"], dbname='mongotor_test')
+        Database.init(["localhost:27027", "localhost:27028"], dbname='mongotor_test')
 
     def tearDown(self):
         super(SignalTestCase, self).tearDown()

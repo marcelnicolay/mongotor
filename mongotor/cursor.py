@@ -76,7 +76,7 @@ class Cursor(object):
             self._skip, self._limit, self._query_spec(), self._fields)
 
         if not self._connection:
-            node = self._database.get_node(self._read_preference)
+            node = yield gen.Task(self._database.get_node, self._read_preference)
             connection = yield gen.Task(node.connection)
         else:
             connection = self._connection
