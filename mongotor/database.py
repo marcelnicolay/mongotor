@@ -158,7 +158,7 @@ class Database(object):
     @gen.engine
     @initialized
     def send_message(self, message, read_preference=None,
-        with_response=True, callback=None):
+                     with_response=True, callback=None):
         node = yield gen.Task(self.get_node, read_preference)
 
         connection = yield gen.Task(node.connection)
@@ -189,7 +189,7 @@ class Database(object):
 
     @initialized
     def command(self, command, value=1, read_preference=None,
-        callback=None, check=True, allowable_errors=[], **kwargs):
+                callback=None, check=True, allowable_errors=[], **kwargs):
         """Issue a MongoDB command.
 
         Send command `command` to the database and return the
@@ -243,7 +243,7 @@ class Database(object):
         self._command(command, read_preference=read_preference, callback=callback)
 
     def _command(self, command, read_preference=None,
-        connection=None, callback=None):
+                 connection=None, callback=None):
 
         if read_preference is None:
             read_preference = self._read_preference

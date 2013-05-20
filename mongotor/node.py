@@ -48,7 +48,7 @@ class Node(object):
         self.initialized = False
 
         self.pool = ConnectionPool(self.host, self.port, self.database.dbname,
-            **self.pool_kargs)
+                                   **self.pool_kargs)
 
     @gen.engine
     def config(self, callback=None):
@@ -62,12 +62,12 @@ class Node(object):
                 # create a connection on the fly if pool is full
                 connection = Connection(host=self.host, port=self.port)
             response, error = yield gen.Task(self.database._command, ismaster,
-                connection=connection)
+                                             connection=connection)
             if not connection._pool:  # if connection is created on the fly
                 connection.close()
         except InterfaceError, ie:
-            logger.error('oops, database node {host}:{port} is unavailable: {error}' \
-                .format(host=self.host, port=self.port, error=ie))
+            logger.error('oops, database node {host}:{port} is unavailable: {error}'
+                         .format(host=self.host, port=self.port, error=ie))
 
         if response:
             self.is_primary = response.get('ismaster', True)
@@ -87,7 +87,7 @@ class Node(object):
     def __repr__(self):
         return """MongoDB node {host}:{port} ({primary}, {secondary})""" \
             .format(host=self.host, port=self.port, primary=self.is_primary,
-                secondary=self.is_secondary)
+                    secondary=self.is_secondary)
 
     def connection(self, callback):
         """Return one connection from pool

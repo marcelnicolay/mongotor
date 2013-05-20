@@ -36,7 +36,7 @@ class ConnectionPool(object):
 
     """
     def __init__(self, host, port, dbname, maxconnections=0, maxusage=0,
-        autoreconnect=True):
+                 autoreconnect=True):
 
         assert isinstance(host, (str, unicode))
         assert isinstance(port, int)
@@ -65,7 +65,7 @@ class ConnectionPool(object):
     def _create_connection(self):
         log.debug('{0} creating new connection'.format(self))
         return Connection(host=self._host, port=self._port, pool=self,
-            autoreconnect=self._autoreconnect)
+                          autoreconnect=self._autoreconnect)
 
     def connection(self, callback=None, retries=0):
         """Get a connection from pool

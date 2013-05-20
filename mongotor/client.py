@@ -52,7 +52,7 @@ class Client(object):
         assert isinstance(doc_or_docs, list)
 
         message_insert = message.insert(self._collection_name, doc_or_docs,
-            check_keys, safe, {})
+                                        check_keys, safe, {})
 
         log.debug("mongo: db.{0}.insert({1})".format(self._collection_name, doc_or_docs))
 
@@ -60,7 +60,7 @@ class Client(object):
         connection = yield gen.Task(node.connection)
 
         response, error = yield gen.Task(connection.send_message,
-            message_insert, safe)
+                                         message_insert, safe)
 
         if callback:
             callback((response, error))
@@ -80,21 +80,21 @@ class Client(object):
         assert isinstance(spec_or_id, dict)
 
         message_delete = message.delete(self._collection_name, spec_or_id,
-            safe, {})
+                                        safe, {})
 
         log.debug("mongo: db.{0}.remove({1})".format(self._collection_name, spec_or_id))
         node = yield gen.Task(self._database.get_node, ReadPreference.PRIMARY)
         connection = yield gen.Task(node.connection)
 
         response, error = yield gen.Task(connection.send_message,
-            message_delete, safe)
+                                         message_delete, safe)
 
         if callback:
             callback((response, error))
 
     @gen.engine
     def update(self, spec, document, upsert=False, safe=True,
-        multi=False, callback=None):
+               multi=False, callback=None):
         """Update a document(s) in this collection.
 
         :Parameters:
@@ -120,7 +120,7 @@ class Client(object):
         assert isinstance(safe, bool), "safe must be an instance of bool"
 
         message_update = message.update(self._collection_name, upsert,
-                multi, spec, document, safe, {})
+                                        multi, spec, document, safe, {})
 
         log.debug("mongo: db.{0}.update({1}, {2}, {3}, {4})".format(
             self._collection_name, spec, document, upsert, multi))
@@ -129,7 +129,7 @@ class Client(object):
         connection = yield gen.Task(node.connection)
 
         response, error = yield gen.Task(connection.send_message,
-            message_update, safe)
+                                         message_update, safe)
 
         callback((response, error))
 
@@ -207,8 +207,7 @@ class Client(object):
             sort=kwargs.get('sort', {}),
             limit=kwargs.get('limit', '')
         ))
-        cursor = Cursor(self._database, self._collection,
-            *args, **kwargs)
+        cursor = Cursor(self._database, self._collection, *args, **kwargs)
 
         if 'callback' in kwargs:
             cursor.find(callback=kwargs['callback'])
@@ -258,15 +257,15 @@ class Client(object):
         if isinstance(pipeline, dict):
             pipeline = [pipeline]
 
-        response, error = yield gen.Task(self._database.command,
-            "aggregate", self._collection, pipeline=pipeline,
-            read_preference=read_preference)
+        response, error = yield gen.Task(self._database.command, "aggregate",
+                                         self._collection, pipeline=pipeline,
+                                         read_preference=read_preference)
 
         callback(response)
 
     @gen.engine
     def group(self, key, condition, initial, reduce, finalize=None,
-        read_preference=None, callback=None):
+              read_preference=None, callback=None):
         """Perform a query similar to an SQL *group by* operation.
 
         Returns an array of grouped items.
@@ -304,7 +303,8 @@ class Client(object):
         if finalize is not None:
             group["finalize"] = Code(finalize)
 
-        response, error = yield gen.Task(self._database.command,
-            "group", group, read_preference=read_preference)
+        response, error = yield gen.Task(self._database.command, "group",
+                                         group,
+                                         read_preference=read_preference)
 
         callback(response)
