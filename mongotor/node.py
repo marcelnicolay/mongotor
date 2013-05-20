@@ -21,7 +21,7 @@ from tornado import gen
 from bson import SON
 from mongotor.pool import ConnectionPool
 from mongotor.connection import Connection
-from mongotor.errors import InterfaceError
+from mongotor.errors import InterfaceError, TooManyConnections
 
 logger = logging.getLogger(__name__)
 
@@ -56,10 +56,15 @@ class Node(object):
 
         response = None
         try:
-            connection = Connection(host=self.host, port=self.port)
+            try:
+                connection = yield gen.Task(self.connection)
+            except TooManyConnections:
+                # create a connection on the fly if pool is full
+                connection = Connection(host=self.host, port=self.port)
             response, error = yield gen.Task(self.database._command, ismaster,
                 connection=connection)
-            connection.close()
+            if not connection.pool:  # if connection is created on the fly
+                connection.close()
         except InterfaceError, ie:
             logger.error('oops, database node {host}:{port} is unavailable: {error}' \
                 .format(host=self.host, port=self.port, error=ie))
