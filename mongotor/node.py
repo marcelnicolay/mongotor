@@ -63,7 +63,7 @@ class Node(object):
                 connection = Connection(host=self.host, port=self.port)
             response, error = yield gen.Task(self.database._command, ismaster,
                 connection=connection)
-            if not connection.pool:  # if connection is created on the fly
+            if not connection._pool:  # if connection is created on the fly
                 connection.close()
         except InterfaceError, ie:
             logger.error('oops, database node {host}:{port} is unavailable: {error}' \
