@@ -73,8 +73,12 @@ class DatabaseTestCase(testing.AsyncTestCase):
         """[DatabaseTestCase] - Raises DatabaseError when could not find valid nodes"""
 
         database = Database.init(["localhost:27030"], dbname='test')
-        database.send_message.when.called_with("", callback=None) \
-            .throw(DatabaseError, 'could not find an available node')
+
+        def send_message():
+            database.send_message('', callback=self.stop)
+            self.wait()
+
+        send_message.when.called.throw(DatabaseError, 'could not find an available node')
 
     def test_run_command(self):
         """[DatabaseTestCase] - Run a database command"""
