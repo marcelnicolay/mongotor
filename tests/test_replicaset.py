@@ -40,11 +40,8 @@ class ReplicaSetTestCase(testing.AsyncTestCase):
 
     def test_raises_error_when_mode_is_secondary_and_secondary_is_down(self):
         """[ReplicaSetTestCase] - Raise error when mode is secondary and secondary is down"""
-        os.system('make mongo-kill > /dev/null 2>&1')
-        os.system('make mongo-start-node1')
-        os.system('make mongo-start-arbiter')
-
-        time.sleep(10)
+        os.system('make mongo-kill-node2')
+        time.sleep(1)  # stops are fast
 
         try:
             db = Database.init(["localhost:27027", "localhost:27028"], dbname='test')
@@ -56,7 +53,7 @@ class ReplicaSetTestCase(testing.AsyncTestCase):
                 .throw(DatabaseError)
         finally:
             os.system('make mongo-start-node2')
-            time.sleep(10)
+            time.sleep(5)  # wait to become secondary again
 
 
 class SecondaryPreferredTestCase(testing.AsyncTestCase):
