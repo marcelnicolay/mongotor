@@ -17,8 +17,8 @@
 from __future__ import with_statement
 from tornado import iostream
 from tornado import stack_context
-from mongotor.errors import (InterfaceError,
-    IntegrityError, ProgrammingError, DatabaseError)
+from mongotor.errors import InterfaceError, IntegrityError, \
+    ProgrammingError, DatabaseError
 from mongotor import helpers
 import socket
 import logging
