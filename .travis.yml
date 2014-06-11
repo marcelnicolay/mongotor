@@ -1,0 +1,11 @@
+language: python
+python:
+  - "2.7"
+
+script:
+ - pip install -r requirements-dev.txt
+ - make mongo-start
+ - make mongo-config
+ - python setup.py build
+ - make test
+

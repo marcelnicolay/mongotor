@@ -2,6 +2,8 @@
 
 (MONGOdb + TORnado) is an asynchronous toolkit for working with ``mongodb`` inside a ``tornado`` app. Mongotor has a pure implementation of python + tornado and only depends on tornado and bson (provided by pymongo)
 
+[![Build Status](https://travis-ci.org/marcelnicolay/mongotor.svg?branch=master)](https://travis-ci.org/marcelnicolay/mongotor)
+
 ## Features
 
 MongoTor is still an alpha project, but already implements the following features:
