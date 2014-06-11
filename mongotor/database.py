@@ -82,6 +82,7 @@ class Database(object):
         self._pool_kwargs = kwargs
         self._initialized = True
         self._connected = False
+        self._connect_callbacks = []
 
         for host, port in self._addresses:
             node = Node(host, port, self, self._pool_kwargs)
@@ -92,7 +93,10 @@ class Database(object):
         connect all mongodb nodes, configuring states and preferences
         - `callback`: (optional) method that will be called when the database is connected
         """
-        self._config_nodes(callback=partial(self._on_config_node, callback=callback))
+        assert not self._connected
+        self._connect_callbacks.append(callback)
+        if len(self._connect_callbacks) == 1:  # if another _connect is not in progress
+            self._config_nodes(callback=self._on_config_node)
 
     def _config_nodes(self, callback=None):
         for node in self._nodes:
@@ -100,14 +104,15 @@ class Database(object):
 
         IOLoop.instance().add_timeout(timedelta(seconds=30), self._config_nodes)
 
-    def _on_config_node(self, callback):
+    def _on_config_node(self):
         for node in self._nodes:
             if not node.initialized:
                 return
 
         self._connected = True
-
-        callback()
+        for callback in self._connect_callbacks:
+            IOLoop.instance().add_callback(callback)
+        self._connect_callbacks = []
 
     @property
     def dbname(self):
